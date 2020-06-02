@@ -1,11 +1,11 @@
 import sys
 import wx
 
-from components.ConsoleOutput import ConsoleOutput
-from components.PropertyEditor import PropertyEditor
-from components.TrayIcon import TrayIcon
+from components.console_output import ConsoleOutput
+from components.property_editor import PropertyEditor
+from components.tray_icon import TrayIcon
 
-from core.bot import get_insta_actions_list
+from core.bot import get_actions_list
 
 
 class MainFrame(wx.Frame):
@@ -44,7 +44,8 @@ class MainFrame(wx.Frame):
 
         # Actions list
         actions_list = wx.ListBox(panel)
-        actions_list.Append(get_insta_actions_list())
+        actions_list.Append(get_actions_list())
+        actions_list.SetFont( wx.Font( 9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, "Courier New" ) )
         actions_list.SetSelection(0)
         sizer.Add(actions_list, 2, wx.ALL | wx.EXPAND, 5)
 
