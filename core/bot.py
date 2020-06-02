@@ -1,7 +1,7 @@
 import re
 
 from instapy import InstaPy
-from instapy import smart_run
+# from instapy import smart_run
 
 # provide not documented descriptions
 INSTA_ACTIONS_DESCRIPTIONS = {
@@ -31,6 +31,7 @@ class InstaAction:
 
         res = f'[{function_name}] **** Not Provide description ***'
         if self.func.__doc__:
+            # re.sub(r' {2,}' , ' ', string)
             desc = re.sub(' +', ' ', (self.func.__doc__.strip()))
 
             if desc:
@@ -42,7 +43,11 @@ class InstaAction:
         return res
 
 
+# INSTA_MAIN_ACTION = InstaAction(InstaPy)
+
 INSTA_ACTIONS: [InstaAction] = [
+    # InstaAction(InstaPy),
+
     InstaAction(InstaPy.like_by_tags),
     InstaAction(InstaPy.like_by_feed),
     InstaAction(InstaPy.like_by_locations),
@@ -73,4 +78,5 @@ INSTA_ACTIONS: [InstaAction] = [
 
 def get_insta_actions_list():
     res = [str(x) for x in INSTA_ACTIONS]
+    # res.insert(0, INSTA_MAIN_ACTION)
     return res
