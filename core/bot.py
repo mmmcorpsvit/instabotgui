@@ -1,10 +1,13 @@
 import re
 
 from instapy import InstaPy
+
 # from instapy import smart_run
 
+ACTIONS_LIST = []
+
 # provide not documented descriptions
-INSTA_ACTIONS_DESCRIPTIONS = {
+_INSTA_ACTIONS_DESCRIPTIONS = {
     'follow_by_tags': 'Follow user based on hashtags (without liking the image)',
     'follow_by_locations': 'This method allows following by locations, without liking or commenting posts.',
     'set_skip_users': 'This will skip all users that have one these keywords on their bio.',
@@ -12,71 +15,73 @@ INSTA_ACTIONS_DESCRIPTIONS = {
 
 
 class InstaAction:
-    func = None
+    """
+    call
+
+
+    import foo
+    method_to_call = getattr(foo, 'bar')
+    result = method_to_call()
+
+    You could shorten lines 2 and 3 to:
+
+    result = getattr(foo, 'bar')()
+    """
+    function_name = None
+    class_of_function = None
+
+    name = ''
+    decsription = ''
 
     # command: str = ''
     # caption: str = ''
-    # params: dict = {}
+    params: dict = {}
 
-    def __init__(self, func):
-        self.func = func
+    def __init__(self, class_of_function: type, func_name: str, ):
+        self.class_of_function = class_of_function
+        self.call_func = getattr(class_of_function, func_name)
+        self.name = func_name
 
-    # def __init__(self, command: str, caption: str, params: dict):
-    #     self.command = command
-    #     self.caption = caption
-    #     self.params = params
+        self.decsription = re.sub(' +', ' ', (
+            self.call_func.__doc__.strip())) \
+            if self.call_func.__doc__ \
+            else _INSTA_ACTIONS_DESCRIPTIONS.get(self.function_name, "[ UNKNOWN DESCRIPTION ]")
+        self.params = {}
 
-    def __str__(self):
-        function_name = self.func.__name__
-
-        res = f'[{function_name}] **** Not Provide description ***'
-        if self.func.__doc__:
-            # re.sub(r' {2,}' , ' ', string)
-            desc = re.sub(' +', ' ', (self.func.__doc__.strip()))
-
-            if desc:
-                res = f'[{function_name}] {desc}'
-        else:
-
-            res = f'[{function_name}] {INSTA_ACTIONS_DESCRIPTIONS.get(function_name, "[ UNKNOWN DESCRIPTION ]")}'
-
-        return res
+    def __repr__(self):
+        return f'[{self.class_of_function}] {self.name}'
 
 
-# INSTA_MAIN_ACTION = InstaAction(InstaPy)
+def add_actions(action_list: list, cls, except_list: list):
+    action_list.extend([InstaAction(class_of_function=cls, func_name=x)
+                        for x in dir(cls)
+                        if not x.startswith('_')
+                        and callable(getattr(cls, x))
+                        and x not in except_list])
 
-INSTA_ACTIONS: [InstaAction] = [
-    # InstaAction(InstaPy),
 
-    InstaAction(InstaPy.like_by_tags),
-    InstaAction(InstaPy.like_by_feed),
-    InstaAction(InstaPy.like_by_locations),
+add_actions(ACTIONS_LIST, InstaPy, [])
+pass
 
-    InstaAction(InstaPy.comment_by_locations),
 
-    InstaAction(InstaPy.follow_by_tags),
-    InstaAction(InstaPy.follow_by_locations),
-    InstaAction(InstaPy.follow_by_list),
-    InstaAction(InstaPy.follow_user_followers),
-    InstaAction(InstaPy.follow_user_following),
-    InstaAction(InstaPy.follow_likers),
-    InstaAction(InstaPy.follow_commenters),
-    InstaAction(InstaPy.unfollow_users),
-
-    InstaAction(InstaPy.interact_by_URL),
-    InstaAction(InstaPy.interact_by_comments),
-
-    InstaAction(InstaPy.remove_follow_requests),
-
-    InstaAction(InstaPy.set_skip_users),
-    InstaAction(InstaPy.set_do_story),
-
-    InstaAction(InstaPy.story_by_tags),
-    InstaAction(InstaPy.story_by_users),
-]
+# from optparse import OptionParser
+# import inspect
 
 
 def get_insta_actions_list():
-    res = [str(x) for x in INSTA_ACTIONS]
+    # except_methods = ['end']
+    # r = 'fgh'
+    # # r.startswith('_')
+    # x = inspect.getmembers(InstaPy, predicate=inspect.isclass)
+    # y = [x for x in dir(InstaPy) if not x.startswith('_') and not x in except_methods]
+    res = [f'{x.class_of_function} {x.name} - {x.decsription}' for x in ACTIONS_LIST]
+    # res = [f'{x.name} {x.decsription}' for x in ACTIONS_LIST]
+
     # res.insert(0, INSTA_MAIN_ACTION)
     return res
+
+
+if __name__ == '__main__':
+    e = get_insta_actions_list()
+    print(e)
+    pass
