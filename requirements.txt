@@ -1,0 +1,7 @@
+InstaPy
+
+wxPython
+# comtypes
+# PyOpenGL
+# PyOpenGL_accelerate
+objectlistview
