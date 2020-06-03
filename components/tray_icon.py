@@ -3,6 +3,10 @@
 import wx
 import wx.adv
 
+import os
+
+dir_path = os.path.dirname(os.path.realpath(__file__))
+
 
 class TrayIcon(wx.adv.TaskBarIcon):
     """"""
@@ -12,7 +16,7 @@ class TrayIcon(wx.adv.TaskBarIcon):
         wx.adv.TaskBarIcon.__init__(self)
         self.frame = frame
 
-        icon = wx.Icon('assets/app.ico', wx.BITMAP_TYPE_ICO)
+        icon = wx.Icon(f'{dir_path}/app.ico', wx.BITMAP_TYPE_ICO)
 
         self.SetIcon(icon, "Restore")
 
