@@ -1,88 +1,147 @@
+import logging
 import sys
-import wx
 
-from components.console_output import ConsoleOutput
-from components.property_editor import PropertyEditor
-from components.tray_icon import TrayIcon
+from PyQt5 import QtGui, QtCore, uic
+from copy import deepcopy
 
-from core.bot import get_actions_list
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtGui import QStandardItem
+from PyQt5.QtWidgets import QDialog, QPushButton, QTreeView, QHBoxLayout, QAbstractItemView, QVBoxLayout, \
+    QApplication, QListWidgetItem, QWidget, QListWidget, QTextEdit, QMainWindow, QPlainTextEdit
+
+from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
+
+stages = []
+
+logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
-class MainFrame(wx.Frame):
-    """"""
+class Handler(QObject, logging.Handler):
+    new_record = pyqtSignal(object)
+
+    def __init__(self, parent):
+        super().__init__(parent)
+        super(logging.Handler).__init__()
+        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
+        self.setFormatter(formatter)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.new_record.emit(msg)  # <---- emit signal here
+
+
+class Formatter(logging.Formatter):
+    def formatException(self, ei):
+        result = super(Formatter, self).formatException(ei)
+        return result
+
+    def format(self, record):
+        s = super(Formatter, self).format(record)
+        if record.exc_text:
+            s = s.replace('\n', '')
+        return s
+
+
+class Ui(QMainWindow):
+    new_button: QPushButton = None
+
+    load_button: QPushButton = None
+    save_Button: QPushButton = None
+    run_button: QPushButton = None
+
+    actions_list: QListWidget = None
+    stages_list: QListWidget = None
+
+    properties_tree: QTreeView = None
+
+    log_textEdit: QPlainTextEdit = None
 
     def __init__(self):
-        """Constructor"""
-        wx.Frame.__init__(self, None, title="InstaBot v0.1")
+        super(Ui, self).__init__()  # Call the inherited classes __init__ method
+        uic.loadUi('gui.ui', self)  # Load the .ui file
 
-        # Добавляем панель так, чтобы она выглядела корректно на всех платформах
-        panel = wx.Panel(self, wx.ID_ANY)
+        self.new_button = self.findChild(QPushButton, 'NewButton')  # noqa
 
-        # TrayIcon
-        self.tbIcon = TrayIcon(self)
+        self.load_button = self.findChild(QPushButton, 'LoadButton')  # noqa
+        # self.load_button.setVisible(False)
 
-        self.Bind(wx.EVT_ICONIZE, self.onMinimize)
-        self.Bind(wx.EVT_CLOSE, self.onClose)
+        self.save_Button = self.findChild(QPushButton, 'SaveButton')  # noqa
+        self.save_Button.setVisible(False)
 
-        # ConsoleLog
-        # https://python-scripts.com/wxpython-redirecting-stdout-stderr
-        # https://python-scripts.com/wxpython-redirect-pythons-logging-module-to-a-textctrl
-        # https://python-scripts.com/textctrl-wxpython
-        # panel = wx.Panel(self, wx.ID_ANY)
-        style = wx.TE_MULTILINE | wx.TE_READONLY | wx.HSCROLL
-        log = ConsoleOutput(panel, wx.ID_ANY, size=(300, 100), style=style)
-        btn = wx.Button(panel, wx.ID_ANY, 'Test!')
-        self.Bind(wx.EVT_BUTTON, self.onConsoleOutputButton, btn)
+        self.run_button = self.findChild(QPushButton, 'RunButton')  # noqa
 
-        # Добавляем виджеты в сайзер
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(log, 1, wx.ALL | wx.EXPAND, 5)
-        sizer.Add(btn, 0, wx.ALL | wx.CENTER, 5)
+        self.actions_list = self.findChild(QListWidget, 'actions_list')  # noqa
+        self.stages_list = self.findChild(QListWidget, 'stages_list')  # noqa
 
-        # Перенаправляем текст сюда
-        sys.stdout = log
+        self.properties_tree = self.findChild(QTreeView, 'properties_tree')  # noqa
 
-        # Actions list
-        actions_list = wx.ListBox(panel)
-        actions_list.Append(get_actions_list())
-        actions_list.SetFont( wx.Font( 9, wx.FONTFAMILY_MODERN, wx.FONTSTYLE_NORMAL, wx.FONTWEIGHT_NORMAL, False, "Courier New" ) )
-        actions_list.SetSelection(0)
-        sizer.Add(actions_list, 2, wx.ALL | wx.EXPAND, 5)
+        self.log_textEdit = self.findChild(QPlainTextEdit, 'log_textEdit')  # noqa
+        # self.log_textEdit.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
-        # propertyeditor
-        property_editor = PropertyEditor(panel)
-        # sizer.Add(property_editor, 3, wx.ALL | wx.EXPAND, 5)
+        # logging.getLogger().addHandler(self.log_textEdit)
+        # You can control the logging level
+        # logging.getLogger().setLevel(logging.DEBUG)
+        self.setup_logger(self.log_textEdit)
 
-        panel.SetSizer(sizer)
-        self.Show()
+        # ---------------------------- events ---------------------------
+        self.new_button.clicked.connect(self.new_buttonClicked)
+        self.load_button.clicked.connect(self.loadButtonClicked)
 
-    def onConsoleOutputButton(self, event):
-        print("You pressed the button!")
+        self.actions_list.addItems(get_actions_list())
+        self.actions_list.doubleClicked.connect(self.actions_listDoubleClicked)
 
-    def onClose(self, evt):
-        """
-        Уничтожает иконку панели задач и рамку
-        """
-        self.tbIcon.RemoveIcon()
-        self.tbIcon.Destroy()
-        self.Destroy()
+        self.stages_list.doubleClicked.connect(self.stages_listDoubleClicked)
 
-    def onMinimize(self, event):
-        """
-        Во время сворачивания, делаем так, чтобы приложение оставило иконку в трее
-        """
-        if self.IsIconized():
-            self.Hide()
+        # if not file load:
+        self.new_buttonClicked()
+        self.show()  # Show the GUI
 
+    def setup_logger(self, log_text_box):
+        handler = Handler(self)
+        # log_text_box = QPlainTextEdit(self)
+        # self.main_layout.addWidget(log_text_box)
+        logging.getLogger().addHandler(handler)
+        logging.getLogger().setLevel(logging.INFO)
+        handler.new_record.connect(log_text_box.appendPlainText)  #
 
-def main(argv):
-    app = wx.App(False)
-    frame = MainFrame()
-    frame.SetSize(1200, 900)
-    frame.Centre()
+    def new_buttonClicked(self):
+        self.stages_list.clear()
+        self.stages_list.addItem(insta_clone(InstaPyStartStageItem))
+        self.stages_list.addItem(insta_clone(InstaPyEndStageItem))
+        self.stages_list.setCurrentRow(0)
+        self.actions_list.setCurrentRow(0)
+        self.log_textEdit.clear()
+        logging.info('Welcome to InstaBot v0.1')
+        pass
 
-    app.MainLoop()
+    def actions_listDoubleClicked(self, qmodelindex):  # noqa
+        # add new action to stages list
+        # ACTIONS_LIST
+        # x = self.actions_list.selectedIndexes()[0]
+        index = self.actions_list.currentRow()
+        _new_object = insta_clone(ACTIONS_LIST[index])
+
+        self.stages_list.insertItem(self.stages_list.count() - 1, _new_object)
+        pass
+
+    def stages_listDoubleClicked(self, qmodelindex):  # noqa
+        # remove action from stages list
+        index = self.stages_list.currentRow()
+        item = self.stages_list.item(index)
+
+        if item.object.name in ['__init__', 'end']:
+            logging.error(f'You cannot remove stage: {item.object.name}')
+            return None
+        self.stages_list.takeItem(index)
+        pass
+
+    def loadButtonClicked(self, qmodelindex):  # noqa
+        # This is executed when the button is pressed
+        logging.info('printButtonPressed')
 
 
 if __name__ == '__main__':
-    main(sys.argv)
+    app = QApplication(sys.argv)
+    ex = Ui()
+    ex.show()
+    sys.exit(app.exec_())

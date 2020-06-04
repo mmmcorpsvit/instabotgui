@@ -1,7 +1,12 @@
 InstaPy
 
-wxPython
+# wxPython
 # comtypes
 # PyOpenGL
 # PyOpenGL_accelerate
 objectlistview
+
+PyQt5==5.15.0
+PyQt5-stubs==5.14.2.2
+# pyqt5-tools
+node

@@ -10,5 +10,6 @@ class ConsoleOutput(wx.TextCtrl):
         """
         wx.TextCtrl.__init__(self, *args, **kwargs)
 
+
     def write(self, text):
         self.WriteText(text)
