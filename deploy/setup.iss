@@ -24,7 +24,7 @@ DisableProgramGroupPage=yes
 ;PrivilegesRequired=lowest
 PrivilegesRequiredOverridesAllowed=dialog
 OutputBaseFilename=mysetup
-Compression=lzma
+Compression=lzma2/max 
 SolidCompression=yes
 WizardStyle=modern
 
@@ -37,7 +37,7 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{
 
 [Files]
 ;Source: "G:\Dev\instabotgui\.venv\python.exe"; DestDir: "{app}"; Flags: ignoreversion
-Source: "G:\Dev\instabotgui\*"; Excludes: "deploy,demo,.idea,.git,.gitinore,requirements.txt,README.rst"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "G:\Dev\instabotgui\*"; Excludes: "deploy,demo,.idea,.git,.gitinore,requirements.txt,README.rst,.venv\Lib\site-packages\~tdesigner,.venv\Lib\site-packages\QtDesigner"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; NOTE: Don't use "Flags: ignoreversion" on any shared system files
 
 [Icons]

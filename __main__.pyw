@@ -9,37 +9,10 @@ from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QDialog, QPushButton, QTreeView, QHBoxLayout, QAbstractItemView, QVBoxLayout, \
     QApplication, QListWidgetItem, QWidget, QListWidget, QTextEdit, QMainWindow, QPlainTextEdit
 
+from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
 
 stages = []
-
-logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-class Handler(QObject, logging.Handler):
-    new_record = pyqtSignal(object)
-
-    def __init__(self, parent):
-        super().__init__(parent)
-        super(logging.Handler).__init__()
-        formatter = Formatter('%(asctime)s|%(levelname)s|%(message)s|', '%d/%m/%Y %H:%M:%S')
-        self.setFormatter(formatter)
-
-    def emit(self, record):
-        msg = self.format(record)
-        self.new_record.emit(msg)  # <---- emit signal here
-
-
-class Formatter(logging.Formatter):
-    def formatException(self, ei):
-        result = super(Formatter, self).formatException(ei)
-        return result
-
-    def format(self, record):
-        s = super(Formatter, self).format(record)
-        if record.exc_text:
-            s = s.replace('\n', '')
-        return s
 
 
 class Ui(QMainWindow):
@@ -97,7 +70,7 @@ class Ui(QMainWindow):
         self.show()  # Show the GUI
 
     def setup_logger(self, log_text_box):
-        handler = Handler(self)
+        handler = log_handle.Handler(self)
         # log_text_box = QPlainTextEdit(self)
         # self.main_layout.addWidget(log_text_box)
         logging.getLogger().addHandler(handler)
