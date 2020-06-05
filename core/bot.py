@@ -1,7 +1,7 @@
 import re
 import inspect
 from copy import deepcopy
-from typing import Mapping
+from typing import Mapping, OrderedDict
 
 from PyQt5.QtWidgets import QListWidgetItem
 from instapy import InstaPy
@@ -64,8 +64,10 @@ class InstaAction:
             self.call_func.__doc__.strip())) \
             if self.call_func.__doc__ \
             else _INSTA_ACTIONS_DESCRIPTIONS.get(func_name, "[ ********* UNKNOWN DESCRIPTION ******** ]")
-        # self.anotation_call = inspect.signature(self.call_func).parameters
+        # _ = inspect.signature(self.call_func).parameters
+        self.anotation_call = OrderedDict(inspect.signature(self.call_func).parameters) # noqa
         # self.annotation_return = inspect.signature(self.call_func).return_annotation
+        pass
 
     def __repr__(self):
         return f'[{self.class_of_function}] {self.name}'

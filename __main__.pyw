@@ -4,10 +4,10 @@ import sys
 from PyQt5 import QtGui, QtCore, uic
 from copy import deepcopy
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtCore import QObject, pyqtSignal, QAbstractItemModel
 from PyQt5.QtGui import QStandardItem
 from PyQt5.QtWidgets import QDialog, QPushButton, QTreeView, QHBoxLayout, QAbstractItemView, QVBoxLayout, \
-    QApplication, QListWidgetItem, QWidget, QListWidget, QTextEdit, QMainWindow, QPlainTextEdit
+    QApplication, QListWidgetItem, QWidget, QListWidget, QTextEdit, QMainWindow, QPlainTextEdit, QFileSystemModel
 
 from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
@@ -34,13 +34,10 @@ class Ui(QMainWindow):
         uic.loadUi('gui.ui', self)  # Load the .ui file
 
         self.new_button = self.findChild(QPushButton, 'NewButton')  # noqa
-
         self.load_button = self.findChild(QPushButton, 'LoadButton')  # noqa
-        # self.load_button.setVisible(False)
-
+        self.load_button.setVisible(False)
         self.save_Button = self.findChild(QPushButton, 'SaveButton')  # noqa
         self.save_Button.setVisible(False)
-
         self.run_button = self.findChild(QPushButton, 'RunButton')  # noqa
 
         self.actions_list = self.findChild(QListWidget, 'actions_list')  # noqa
@@ -64,6 +61,7 @@ class Ui(QMainWindow):
         self.actions_list.doubleClicked.connect(self.actions_listDoubleClicked)
 
         self.stages_list.doubleClicked.connect(self.stages_listDoubleClicked)
+        self.stages_list.itemSelectionChanged.connect(self.stages_listitemSelectionChanged)
 
         # if not file load:
         self.new_buttonClicked()
@@ -87,10 +85,13 @@ class Ui(QMainWindow):
         logging.info('Welcome to InstaBot v0.1')
         pass
 
+    def loadButtonClicked(self, qmodelindex):  # noqa
+        # This is executed when the button is pressed
+        logging.info('printButtonPressed')
+
+    # ------------------------------------------------------
     def actions_listDoubleClicked(self, qmodelindex):  # noqa
         # add new action to stages list
-        # ACTIONS_LIST
-        # x = self.actions_list.selectedIndexes()[0]
         index = self.actions_list.currentRow()
         _new_object = insta_clone(ACTIONS_LIST[index])
 
@@ -108,9 +109,32 @@ class Ui(QMainWindow):
         self.stages_list.takeItem(index)
         pass
 
-    def loadButtonClicked(self, qmodelindex):  # noqa
-        # This is executed when the button is pressed
-        logging.info('printButtonPressed')
+    def stages_listitemSelectionChanged(self):
+        index = self.stages_list.currentRow()
+        anotation_call = self.stages_list.item(index).object.anotation_call
+
+        d = {'First name': 'Maximus',
+             'Last name': 'Mustermann',
+             'Nickname': 'Max',
+             'Address': {'Street': 'Musterstr.',
+                         'House number': 13,
+                         'Place': 'Orthausen',
+                         'Zipcode': 76123},
+             'An Object': float,
+             'Great-grandpa': {
+                 'Grandpa': {
+                     'Pa': 'Child'}}
+             }
+
+        y = QAbstractItemModel(d)
+        QFileSystemModel()
+
+        self.properties_tree.setModel(y)
+        pass
+
+    # def createPropertiesOfStage(self):
+    #     self.properties_tree.clear()
+    #     pass
 
 
 if __name__ == '__main__':
