@@ -19,7 +19,7 @@
      <rect>
       <x>10</x>
       <y>50</y>
-      <width>741</width>
+      <width>591</width>
       <height>481</height>
      </rect>
     </property>
@@ -51,7 +51,7 @@
    <widget class="QWidget" name="verticalLayoutWidget_2">
     <property name="geometry">
      <rect>
-      <x>760</x>
+      <x>620</x>
       <y>50</y>
       <width>271</width>
       <height>481</height>
@@ -73,9 +73,9 @@
    <widget class="QWidget" name="verticalLayoutWidget_3">
     <property name="geometry">
      <rect>
-      <x>1050</x>
+      <x>900</x>
       <y>50</y>
-      <width>311</width>
+      <width>461</width>
       <height>481</height>
      </rect>
     </property>
@@ -86,9 +86,6 @@
         <string>Object properties</string>
        </property>
       </widget>
-     </item>
-     <item>
-      <widget class="QTreeView" name="properties_tree"/>
      </item>
     </layout>
    </widget>
