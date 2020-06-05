@@ -1,4 +1,7 @@
 InstaPy
+keyring
+pywin32
+plyer
 
 # wxPython
 # comtypes

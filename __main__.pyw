@@ -1,5 +1,6 @@
 import logging
 # from inspect import Parameter
+from copy import deepcopy
 from inspect import Parameter
 
 from core import log_handle
@@ -15,7 +16,7 @@ from pyqtgraph.Qt import QtCore, QtGui
 
 app = QtGui.QApplication([])  # noqa
 
-stages = []
+# stages = []
 
 
 class Ui(QMainWindow):
@@ -107,9 +108,14 @@ class Ui(QMainWindow):
 
     def RunButtonClicked(self, qmodelindex):  # noqa
         logging.info('Start working')
-        #--------------------------------------------
+        # --------------------------------------------
 
-        #--------------------------------------------
+        y = [self.stages_list[x].object for x in self.stages_list.count()]
+        stages = deepcopy(y)
+        pass
+
+
+        # --------------------------------------------
         logging.info('End working')
         pass
 
