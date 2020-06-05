@@ -1,17 +1,17 @@
 import logging
 # from inspect import Parameter
+from inspect import Parameter
 
-from pyqtgraph.Qt import QtCore, QtGui
+from core import log_handle
+from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
 
-from PyQt5.QtWidgets import QPushButton, QTreeView, QVBoxLayout, \
-    QApplication, QListWidget, QMainWindow, QPlainTextEdit
+from PyQt5.QtWidgets import QTreeView, QVBoxLayout, \
+    QApplication, QListWidget, QMainWindow, QPlainTextEdit, QPushButton
 from PyQt5.uic import loadUi  # noqa
 
 from pyqtgraph.parametertree import ParameterTree
 from pyqtgraph.parametertree import Parameter as ParameterForTree
-
-from core import log_handle
-from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
+from pyqtgraph.Qt import QtCore, QtGui
 
 app = QtGui.QApplication([])  # noqa
 
@@ -31,6 +31,8 @@ class Ui(QMainWindow):
     properties_tree: QTreeView = None
 
     log_textEdit: QPlainTextEdit = None
+
+    current_stage = None
 
     def __init__(self):
         super(Ui, self).__init__()  # Call the inherited classes __init__ method
@@ -73,6 +75,7 @@ class Ui(QMainWindow):
         # ---------------------------- events ---------------------------
         self.new_button.clicked.connect(self.new_buttonClicked)
         self.load_button.clicked.connect(self.loadButtonClicked)
+        self.run_button.clicked.connect(self.RunButtonClicked)
 
         self.actions_list.addItems(get_actions_list())
         self.actions_list.doubleClicked.connect(self.actions_listDoubleClicked)
@@ -102,6 +105,14 @@ class Ui(QMainWindow):
         logging.info('Welcome to InstaBot v0.1')
         pass
 
+    def RunButtonClicked(self, qmodelindex):  # noqa
+        logging.info('Start working')
+        #--------------------------------------------
+
+        #--------------------------------------------
+        logging.info('End working')
+        pass
+
     def loadButtonClicked(self, qmodelindex):  # noqa
         # This is executed when the button is pressed
         logging.info('printButtonPressed')
@@ -127,99 +138,54 @@ class Ui(QMainWindow):
         pass
 
     def stages_listitemSelectionChanged(self):
-        params = [
-            {'name': 'Basic parameter data types', 'type': 'group', 'children': [
-                {'name': 'Integer', 'type': 'int', 'value': 10},
-                {'name': 'Float', 'type': 'float', 'value': 10.5, 'step': 0.1},
-                {'name': 'String', 'type': 'str', 'value': "hi"},
-                {'name': 'List', 'type': 'list', 'values': [1, 2, 3], 'value': 2},
-                {'name': 'Named List', 'type': 'list', 'values': {"one": 1, "two": "twosies", "three": [3, 3, 3]},
-                 'value': 2},
-                {'name': 'Boolean', 'type': 'bool', 'value': True, 'tip': "This is a checkbox"},
-                {'name': 'Color', 'type': 'color', 'value': "FF0", 'tip': "This is a color button"},
-                {'name': 'Gradient', 'type': 'colormap'},
-                {'name': 'Subgroup', 'type': 'group', 'children': [
-                    {'name': 'Sub-param 1', 'type': 'int', 'value': 10},
-                    {'name': 'Sub-param 2', 'type': 'float', 'value': 1.2e6},
-                ]},
-                {'name': 'Text Parameter', 'type': 'text', 'value': 'Some text...'},
-                {'name': 'Action Parameter', 'type': 'action'},
-            ]},
-        ]
-        p = ParameterForTree.create(name='params', type='group', children=params)
-
-        self.properties_tree.setParameters(p, showTop=False)
-        return None
+        # render new propertry list table
         index = self.stages_list.currentRow()
-        data = self.stages_list.item(index).object.anotation_call
+        private_data = self.stages_list.item(index).object.anotation_call
+        private_values_list = self.stages_list.item(index).object.values
 
-        # y = QAbstractItemModel(d)
-        # QFileSystemModel()
-
-        # self.properties_tree.setModel(y)
-
-        # self.properties_tree.setModel(QStandardItemModel())
-        # self.properties_tree.setModel(QStandardItemModel())
-        # self.properties_tree.setAlternatingRowColors(True)
-        # self.properties_tree.setSortingEnabled(True)
-        # self.properties_tree.setHeaderHidden(False)
-        # self.properties_tree.setSelectionBehavior(QAbstractItemView.SelectItems)
-        # self.properties_tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
-
-        # data = {}
-        # # This example will be hidden (has no parameter-value pair)
-        # data['example0'] = {}
-        # # A set example with an integer and a string parameters
-        # data['example1'] = {}
-        # data['example1']['int'] = 14
-        # data['example1']['str'] = 'asdf'
-        # # A set example with a float and other non-conventional type
-        # data['example2'] = {}
-        # data['example2']['float'] = 1.2
-        # # data['example2']['other'] = Other(4, 8)
-
-        # data['required'] = {}
-        # for x in anotation_call:
-        #     _name = anotation_call[x].name
-        #     if _name == 'self':
-        #         continue
-        #     data['required'][_name] = anotation_call[x].default
-
-        # data['required'] = {x.name: x.default for x in anotation_call}
-        # data['required'] = {str(x): 111 for x in anotation_call}
-        # data['optional'] = {}
-
-        parent = QStandardItem('kjkj')
-
-        # for x in data:
-        #     if not data[x]:
-        #         continue
-        #     parent = QStandardItem(x)
-        #     parent.setFlags(QtCore.Qt.NoItemFlags)
-
-        # self.properties_tree.model().beginInsertRows()
-
-        for y in data:
-            value: Parameter = data[y]
-            if value.name == 'self':
+        params_list = []
+        for x in private_data:
+            el = private_data[x]
+            if el.name == 'self':
                 continue
-            child0 = QStandardItem(y)
-            child0.setFlags(QtCore.Qt.NoItemFlags | QtCore.Qt.ItemIsEnabled)
+            new_el = {'name': el.name, 'default': el.default}
 
-            # child1 = QStandardItem(str(value))
-            child1 = QStandardItem(value.default)
-            child1.setFlags(QtCore.Qt.ItemIsEnabled | QtCore.Qt.ItemIsEditable | ~ QtCore.Qt.ItemIsSelectable)
-            child1.type = value.annotation
+            if el.annotation.__name__ not in ['_empty']:
+                new_el['type'] = el.annotation.__name__
+            else:
+                pass
 
-            parent.appendRow([child0, child1])
-        self.properties_tree.model().appendRow(parent)
+            # set value from stored in Item-object list
+            if el.name in private_values_list:
+                new_el['value'] = private_values_list[el.name]
 
-        self.properties_tree.expandAll()
-        pass
+            if hasattr(el, 'value'):
+                new_el['value'] = getattr(el, 'value')
 
-    # def createPropertiesOfStage(self):
-    #     self.properties_tree.clear()
-    #     pass
+            params_list.append(new_el)
+
+        self.current_stage = [
+            {'name': 'Basic parameter data types', 'type': 'group', 'children':
+                params_list
+             }]
+
+        # params = data
+
+        # p = ParameterForTree.create(name='params', type='group', children=self.current_stage)
+        p = ParameterForTree.create(name='params', type='list', children=self.current_stage)
+
+        # p.sigTreeStateChanged.connect(None)
+        self.properties_tree.setParameters(p, showTop=False)
+        p.sigTreeStateChanged.connect(self.properties_tree_change)
+
+    ## If anything changes in the tree, print a message
+    def properties_tree_change(self, param, changes):
+        print("tree changes:")
+        for param2, change, data in changes:
+            index = self.stages_list.currentRow()
+            data2 = self.stages_list.item(index).object.values
+
+            data2[param2.opts['name']] = data
 
 
 ex = Ui()

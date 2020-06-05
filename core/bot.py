@@ -66,6 +66,9 @@ class InstaAction:
             else _INSTA_ACTIONS_DESCRIPTIONS.get(func_name, "[ ********* UNKNOWN DESCRIPTION ******** ]")
         # _ = inspect.signature(self.call_func).parameters
         self.anotation_call = OrderedDict(inspect.signature(self.call_func).parameters) # noqa
+
+        self.values = {}
+
         # self.annotation_return = inspect.signature(self.call_func).return_annotation
         pass
 

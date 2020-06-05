@@ -6,6 +6,8 @@ demonstrates a variety of different parameter types (int, float, list, etc.)
 as well as some customized parameter types
 """
 
+from instapy import InstaPy
+
 # import initExample  ## Add path to library (just for examples; you do not need this)
 import logging
 
