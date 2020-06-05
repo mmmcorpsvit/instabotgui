@@ -1,7 +1,7 @@
 import logging
 # from inspect import Parameter
 from copy import deepcopy
-from inspect import Parameter
+# from inspect import Parameter
 
 from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
@@ -12,9 +12,12 @@ from PyQt5.uic import loadUi  # noqa
 
 from pyqtgraph.parametertree import ParameterTree
 from pyqtgraph.parametertree import Parameter as ParameterForTree
-from pyqtgraph.Qt import QtCore, QtGui
 
-app = QtGui.QApplication([])  # noqa
+
+# from pyqtgraph.Qt import QtCore, QtGui
+
+# app = QtGui.QApplication([])  # noqa
+
 
 # stages = []
 
@@ -114,7 +117,6 @@ class Ui(QMainWindow):
         stages = deepcopy(y)
         pass
 
-
         # --------------------------------------------
         logging.info('End working')
         pass
@@ -184,9 +186,9 @@ class Ui(QMainWindow):
         self.properties_tree.setParameters(p, showTop=False)
         p.sigTreeStateChanged.connect(self.properties_tree_change)
 
-    ## If anything changes in the tree, print a message
+    # If anything changes in the tree, print a message
     def properties_tree_change(self, param, changes):
-        print("tree changes:")
+        # print("tree changes:")
         for param2, change, data in changes:
             index = self.stages_list.currentRow()
             data2 = self.stages_list.item(index).object.values
@@ -194,19 +196,16 @@ class Ui(QMainWindow):
             data2[param2.opts['name']] = data
 
 
-ex = Ui()
-ex.show()
+# ex = Ui()
+# ex.show()
 
 if __name__ == '__main__':
     import sys
 
+    app = QApplication(sys.argv)
+    ex = Ui()
+    ex.show()
+    sys.exit(app.exec_())
+
     # if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-    #     QtGui.QApplication.instance().exec_()
-
-    # app = QApplication(sys.argv)
-    # ex = Ui()
-    # ex.show()
-    # sys.exit(app.exec_())
-
-    if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
-        QtGui.QApplication.instance().exec_()  # noqa
+    #     QApplication.instance().exec_()  # noqa
