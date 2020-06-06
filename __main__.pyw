@@ -2,6 +2,7 @@ import logging
 # from inspect import Parameter
 from copy import deepcopy
 # from inspect import Parameter
+from instapy import InstaPy, smart_run
 
 from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
@@ -32,7 +33,7 @@ class Ui(QMainWindow):
     actions_list: QListWidget = None
     stages_list: QListWidget = None
 
-    properties_tree: QTreeView = None
+    properties_tree: ParameterTree = None
 
     log_textEdit: QPlainTextEdit = None
 
@@ -110,12 +111,53 @@ class Ui(QMainWindow):
         pass
 
     def RunButtonClicked(self, qmodelindex):  # noqa
+        import os
         logging.info('Start working')
         # --------------------------------------------
 
-        y = [self.stages_list[x].object for x in self.stages_list.count()]
+        # create tasks list (just do deep copy)
+        y = [self.stages_list.item(x).object for x in range(self.stages_list.count())]
         stages = deepcopy(y)
-        pass
+
+        if len(stages) < 2 or stages[0].name != '__init__' or stages[len(stages) - 1].name != 'end':
+            logging.error('First stage must be init, last stage must be end')
+            return None
+
+        dir_path = os.path.dirname(os.path.realpath(__file__))
+        x = stages[0].values
+        # x['username'] = 'gloss_dp'
+        # x['password'] = 'UKJCwev'
+
+        # rewrite if default some settings
+        if 'browser_executable_path' not in x:
+            x['browser_executable_path'] = os.path.join(dir_path, 'firefox\\firefox.exe')
+
+        if 'geckodriver_path' not in x:
+            x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
+
+        if 'want_check_browser' not in x:
+            x['want_check_browser'] = False
+
+        # session = InstaPy(username='gloss_dp',
+        #                   password='UKJCwev',
+        #                   browser_executable_path=r"D:\Program Files444\firefox.exe")
+
+        session = InstaPy(**x)
+
+        with smart_run(session):
+            for index, stage in enumerate(stages):
+
+                # skip init and end stages
+                if index == 0 or index == len(stages):
+                    continue
+
+                # call function from instance
+                f = getattr(session, stage.name)
+                f(**stage.values)
+                pass
+
+        # x = stages[len(stages)].value
+        # insta.end()
 
         # --------------------------------------------
         logging.info('End working')
@@ -159,7 +201,10 @@ class Ui(QMainWindow):
             new_el = {'name': el.name, 'default': el.default}
 
             if el.annotation.__name__ not in ['_empty']:
-                new_el['type'] = el.annotation.__name__
+                if el.annotation.__name__ == 'list':
+                    new_el['type'] = 'text'
+                else:
+                    new_el['type'] = el.annotation.__name__
             else:
                 pass
 

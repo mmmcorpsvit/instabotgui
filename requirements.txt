@@ -1,16 +1,25 @@
-InstaPy
-keyring
-pywin32
-plyer
+pip
+wheel
 
-# wxPython
-# comtypes
-# PyOpenGL
-# PyOpenGL_accelerate
-objectlistview
+# objectlistview
 
 PyQt5==5.15.0
 PyQt5-stubs==5.14.2.2
 # pyqt5-tools
 # node
 git+https://github.com/pyqtgraph/pyqtgraph@develop
+
+
+# InstaPy
+
+git+https://github.com/timgrossmann/InstaPy.git
+
+keyring
+# pywin32
+# plyer
+
+# wxPython
+# comtypes
+# PyOpenGL
+# PyOpenGL_accelerate
+
