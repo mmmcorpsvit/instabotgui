@@ -1,8 +1,11 @@
+import sys
+import os
+
 import logging
 # from inspect import Parameter
 from copy import deepcopy
 # from inspect import Parameter
-from instapy import InstaPy, smart_run
+from instapy import InstaPy, smart_run, set_workspace
 
 from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
@@ -13,6 +16,10 @@ from PyQt5.uic import loadUi  # noqa
 
 from pyqtgraph.parametertree import ParameterTree
 from pyqtgraph.parametertree import Parameter as ParameterForTree
+
+import qdarkstyle
+
+os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
 
 # from pyqtgraph.Qt import QtCore, QtGui
@@ -111,7 +118,6 @@ class Ui(QMainWindow):
         pass
 
     def RunButtonClicked(self, qmodelindex):  # noqa
-        import os
         logging.info('Start working')
         # --------------------------------------------
 
@@ -124,13 +130,19 @@ class Ui(QMainWindow):
             return None
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
+
+        # set_workspace('c:\\1111\\')
+
         x = stages[0].values
-        # x['username'] = 'gloss_dp'
-        # x['password'] = 'UKJCwev'
+        x['username'] = 'gloss_dp'
+        x['password'] = 'UKJCwev'
+
+        x['split_db'] = True
 
         # rewrite if default some settings
         if 'browser_executable_path' not in x:
-            x['browser_executable_path'] = os.path.join(dir_path, 'firefox\\firefox.exe')
+            x['browser_executable_path'] = os.path.join(dir_path, 'firefox/firefox.exe')
+            # x['browser_executable_path'] = os.path.join(dir_path, 'FirefoxPortable32\\FirefoxPortable.exe')
 
         if 'geckodriver_path' not in x:
             x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
@@ -144,6 +156,7 @@ class Ui(QMainWindow):
 
         session = InstaPy(**x)
 
+        # with smart_run(session, threaded=True):
         with smart_run(session):
             for index, stage in enumerate(stages):
 
@@ -245,9 +258,10 @@ class Ui(QMainWindow):
 # ex.show()
 
 if __name__ == '__main__':
-    import sys
-
     app = QApplication(sys.argv)
+    # app.setStyleSheet(qdarkstyle.load_stylesheet())
+    app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
+
     ex = Ui()
     ex.show()
     sys.exit(app.exec_())
