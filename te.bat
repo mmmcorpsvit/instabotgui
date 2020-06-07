@@ -1,0 +1,1 @@
+"G:\Dev\instabotgui\.venv\pythonw.exe" "G:\Dev\instabotgui\__main__.pyw"

@@ -8,13 +8,16 @@ import logging
 # from inspect import Parameter
 from copy import deepcopy
 # from inspect import Parameter
+from PyQt5.QtCore import QObject, pyqtSignal
+from PyQt5.QtGui import QTextCursor
 from instapy import InstaPy, smart_run, set_workspace
 
-from core import log_handle
+# from core import log_handle
 from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
 
 from PyQt5.QtWidgets import QTreeView, QVBoxLayout, \
-    QApplication, QListWidget, QMainWindow, QPlainTextEdit, QPushButton
+    QApplication, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QTextEdit, QWidget, QGridLayout, QLabel, \
+    QLineEdit
 from PyQt5.uic import loadUi  # noqa
 
 from pyqtgraph.parametertree import ParameterTree
@@ -25,12 +28,20 @@ import qdarkstyle
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
 
+# logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
 # from pyqtgraph.Qt import QtCore, QtGui
 
 # app = QtGui.QApplication([])  # noqa
 
 
 # stages = []
+
+class Stream(QObject):
+    newText = pyqtSignal(str)
+
+    def write(self, text):
+        self.newText.emit(str(text))
 
 
 class Ui(QMainWindow):
@@ -45,7 +56,7 @@ class Ui(QMainWindow):
 
     properties_tree: ParameterTree = None
 
-    log_textEdit: QPlainTextEdit = None
+    log_textEdit: QTextEdit = None
 
     current_stage = None
 
@@ -55,7 +66,7 @@ class Ui(QMainWindow):
 
         self.new_button = self.findChild(QPushButton, 'NewButton')  # noqa
         self.load_button = self.findChild(QPushButton, 'LoadButton')  # noqa
-        self.load_button.setVisible(False)
+        # self.load_button.setVisible(False)
         self.save_Button = self.findChild(QPushButton, 'SaveButton')  # noqa
         self.save_Button.setVisible(False)
         self.run_button = self.findChild(QPushButton, 'RunButton')  # noqa
@@ -79,13 +90,13 @@ class Ui(QMainWindow):
         # self.properties_tree.setSelectionBehavior(QAbstractItemView.SelectItems)
         # self.properties_tree.model().setHorizontalHeaderLabels(['Parameter', 'Value'])
 
-        self.log_textEdit = self.findChild(QPlainTextEdit, 'log_textEdit')  # noqa
+        self.log_textEdit = self.findChild(QTextEdit, 'log_textEdit')  # noqa
         # self.log_textEdit.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
         # logging.getLogger().addHandler(self.log_textEdit)
         # You can control the logging level
         # logging.getLogger().setLevel(logging.DEBUG)
-        self.setup_logger(self.log_textEdit)
+        # self.setup_logger(self.log_textEdit)
 
         # ---------------------------- events ---------------------------
         self.new_button.clicked.connect(self.new_buttonClicked)
@@ -98,17 +109,32 @@ class Ui(QMainWindow):
         self.stages_list.doubleClicked.connect(self.stages_listDoubleClicked)
         self.stages_list.itemSelectionChanged.connect(self.stages_listitemSelectionChanged)
 
+        # sys.stdout = Stream(newText=self.onUpdateText)
+
+        sys.stdout = Stream(newText=self.onUpdateText)
+        sys.stderr = Stream(newText=self.onUpdateText)
+
         # if not file load:
         self.new_buttonClicked()
         # self.show()  # Show the GUI
 
-    def setup_logger(self, log_text_box):
-        handler = log_handle.Handler(self)
-        # log_text_box = QPlainTextEdit(self)
-        # self.main_layout.addWidget(log_text_box)
-        logging.getLogger().addHandler(handler)
-        logging.getLogger().setLevel(logging.INFO)
-        handler.new_record.connect(log_text_box.appendPlainText)  #
+    def onUpdateText(self, text):
+        cursor = self.log_textEdit.textCursor()
+        cursor.movePosition(QTextCursor.End)
+        cursor.insertText(text)
+        self.log_textEdit.setTextCursor(cursor)
+        self.log_textEdit.ensureCursorVisible()
+
+    def __del__(self):
+        sys.stdout = sys.__stdout__
+
+    # def setup_logger(self, log_text_box):
+    #     handler = log_handle.Handler(self)
+    #     # log_text_box = QPlainTextEdit(self)
+    #     # self.main_layout.addWidget(log_text_box)
+    #     logging.getLogger().addHandler(handler)
+    #     logging.getLogger().setLevel(logging.INFO)
+    #     handler.new_record.connect(log_text_box.appendPlainText)  #
 
     def new_buttonClicked(self):
         self.stages_list.clear()
@@ -117,7 +143,8 @@ class Ui(QMainWindow):
         self.stages_list.setCurrentRow(0)
         self.actions_list.setCurrentRow(0)
         self.log_textEdit.clear()
-        logging.info('Welcome to InstaBot v0.1')
+        logging.info('Welcome to InstaBot v0.1---------------')
+        print('Welcome to InstaBot v0.1**************')
         pass
 
     def RunButtonClicked(self, qmodelindex):  # noqa
@@ -133,7 +160,7 @@ class Ui(QMainWindow):
             return None
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
-        gecko_driver_path = None
+        # gecko_driver_path = None
 
         # set_workspace('c:\\1111\\')
 
@@ -149,10 +176,10 @@ class Ui(QMainWindow):
             # x['browser_executable_path'] = os.path.join(dir_path, 'FirefoxPortable32\\FirefoxPortable.exe')
 
         if 'geckodriver_path' not in x:
-            gecko_driver_path = tempfile.mkdtemp()
-            copyfile(os.path.join(dir_path, 'geckodriver.exe'), os.path.join(gecko_driver_path, 'geckodriver.exe'))
-            # x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
-            x['geckodriver_path'] = os.path.join(gecko_driver_path, 'geckodriver.exe')
+            # gecko_driver_path = tempfile.mkdtemp()
+            # copyfile(os.path.join(dir_path, 'geckodriver.exe'), os.path.join(gecko_driver_path, 'geckodriver.exe'))
+            x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
+            # x['geckodriver_path'] = os.path.join(gecko_driver_path, 'geckodriver.exe')
 
         if 'want_check_browser' not in x:
             x['want_check_browser'] = False
@@ -166,29 +193,39 @@ class Ui(QMainWindow):
         # with smart_run(session, threaded=True):
         with smart_run(session):
             for index, stage in enumerate(stages):
+                # current_values = deepcopy(stage.values)
 
                 # skip init and end stages
                 if index == 0 or index == len(stages):
                     continue
 
+                # convert text (valid for propretry editor) to list
+                current_values = {
+                    key: value.split() if stage.anotation_call[key].annotation.__name__ == 'list' else value for
+                    (key, value) in stage.values.items()}
+
                 # call function from instance
                 f = getattr(session, stage.name)
-                f(**stage.values)
+                f(**current_values)  # noqa https://youtrack.jetbrains.com/issue/PY-27935
                 pass
 
         # x = stages[len(stages)].value
         # insta.end()
 
         # ------------------------
-        if gecko_driver_path:
-            shutil.rmtree(gecko_driver_path)
+        # if gecko_driver_path:
+        #     shutil.rmtree(gecko_driver_path)
         # --------------------------------------------
+
         logging.info('End working')
         pass
 
     def loadButtonClicked(self, qmodelindex):  # noqa
         # This is executed when the button is pressed
         logging.info('printButtonPressed')
+
+        logging.info('Welcome to InstaBot v0.1---------------')
+        print('Welcome to InstaBot v0.1**************')
 
     # ------------------------------------------------------
     def actions_listDoubleClicked(self, qmodelindex):  # noqa
@@ -267,14 +304,89 @@ class Ui(QMainWindow):
 # ex = Ui()
 # ex.show()
 
-if __name__ == '__main__':
+
+class Example(QWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):
+
+        grid = QGridLayout()
+        self.setLayout(grid)
+
+        names = ['Cls', 'Bck', '', 'Close',
+                 '7', '8', '9', '/',
+                 '4', '5', '6', '*',
+                 '1', '2', '3', '-',
+                 '0', '.', '=', '+']
+
+        positions = [(i, j) for i in range(5) for j in range(4)]
+
+        for position, name in zip(positions, names):
+
+            if name == '':
+                continue
+            button = QPushButton(name)
+            grid.addWidget(button, *position)
+
+        self.move(300, 150)
+        self.setWindowTitle('Calculator')
+        self.show()
+
+
+class Example2(QWidget):
+
+    def __init__(self):
+        super().__init__()
+
+        self.initUI()
+
+    def initUI(self):
+        title = QLabel('Title')
+        author = QLabel('Author')
+        review = QLabel('Review')
+
+        titleEdit = QLineEdit()
+        authorEdit = QLineEdit()
+        reviewEdit = QTextEdit()
+
+        grid = QGridLayout()
+        grid.setSpacing(10)
+
+        grid.addWidget(title, 1, 0)
+        grid.addWidget(titleEdit, 1, 1)
+
+        grid.addWidget(author, 2, 0)
+        grid.addWidget(authorEdit, 2, 1)
+
+        grid.addWidget(review, 3, 0)
+        grid.addWidget(reviewEdit, 3, 1, 5, 1)
+
+        self.setLayout(grid)
+
+        self.setGeometry(300, 300, 350, 300)
+        self.setWindowTitle('Review')
+        self.show()
+
+
+def run():
+    # handler.setFormatter(logging.Formatter('%(levelname)s: %(filename)s - %(message)s'))
+
     app = QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet())
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
 
     ex = Ui()
+    # ex = Example2()
     ex.show()
     sys.exit(app.exec_())
 
     # if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
     #     QApplication.instance().exec_()  # noqa
+
+
+if __name__ == '__main__':
+    run()

@@ -22,11 +22,13 @@ DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 ; Uncomment the following line to run in non administrative install mode (install for current user only.)
 ;PrivilegesRequired=lowest
-PrivilegesRequiredOverridesAllowed=dialog
+PrivilegesRequiredOverridesAllowed=
 OutputBaseFilename=mysetup
 Compression=lzma2/max 
 SolidCompression=yes
 WizardStyle=modern
+PrivilegesRequired=admin
+
 
 [Languages]
 ;Name: "english"; MessagesFile: "compiler:Default.isl"
@@ -42,12 +44,36 @@ Source: "G:\Dev\instabotgui\*"; Excludes: "deploy,demo,.idea,.git,.gitinore,requ
 
 [Icons]
 ;Name: "{autoprograms}\{#MyAppName}"; Filename: "{app}\.venv\Scripts\{#MyAppExeName} {DefaultDirName}\__main__.py";
-Name: "{group}\Application"; Filename: "{app}\.venv\pythonw.exe"; WorkingDir: "{app}"; Parameters: """{app}\__main__.pyw"""; IconFilename: "{app}\favicon.ico"
-Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\.venv\pythonw.exe"; WorkingDir: "{app}"; Parameters: """{app}\__main__.pyw"""; Tasks: desktopicon
+Name: "{group}\Application"; Filename: "{app}\.venv\python.exe"; WorkingDir: "{app}"; Parameters: """{app}\__main__.py"""; IconFilename: "{app}\favicon.ico"; 
+;AfterInstall: SetElevationBit('{userdesktop}\{#MyAppName}.lnk')
+Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\.venv\python.exe"; WorkingDir: "{app}"; Parameters: """{app}\__main__.py"""; Tasks: desktopicon; 
+;AfterInstall: SetElevationBit('{userdesktop}\{#MyAppName}.lnk')
 
-[Run]
+
+;[Run]
 ;Filename: "{app}\.venv\Scripts\{#MyAppExeName} {DefaultDirName}\__main__.py";  Description: "{cm:LaunchProgram,{#StringChange(MyAppName, '&', '&&')}}"; Flags: nowait postinstall skipifsilent
-Filename: "{app}\.venv\pythonw.exe"; WorkingDir: "{app}"; Parameters: """{app}__main__.pyw"""; 
+;Filename: "{app}\.venv\pythonw.exe"; WorkingDir: "{app}"; Parameters: """{app}__main__.pyw"""; 
 ;Flags: runhidden
 
 
+[Code]
+procedure SetElevationBit(Filename: string);
+var
+  Buffer: string;
+  Stream: TStream;
+begin
+  Filename := ExpandConstant(Filename);
+  Log('Setting elevation bit for ' + Filename);
+
+  Stream := TFileStream.Create(FileName, fmOpenReadWrite);
+  try
+    Stream.Seek(21, soFromBeginning);
+    SetLength(Buffer, 1);
+    Stream.ReadBuffer(Buffer, 1);
+    Buffer[1] := Chr(Ord(Buffer[1]) or $20);
+    Stream.Seek(-1, soFromCurrent);
+    Stream.WriteBuffer(Buffer, 1);
+  finally
+    Stream.Free;
+  end;
+end;

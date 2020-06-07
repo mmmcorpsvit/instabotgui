@@ -2,7 +2,7 @@ import logging
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-logging.basicConfig(level=logging.ERROR, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 
 class Handler(QObject, logging.Handler):
