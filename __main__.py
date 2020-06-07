@@ -188,11 +188,11 @@ class Ui(QMainWindow):
 
         session = InstaPy(**x)
 
-        # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
-        session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
-
         # with smart_run(session, threaded=True):
         with smart_run(session):
+            # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
+            session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
+
             for index, stage in enumerate(stages):
                 # current_values = deepcopy(stage.values)
 
@@ -380,8 +380,8 @@ def run():
     # app.setStyleSheet(qdarkstyle.load_stylesheet())
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
 
-    ex = Ui()
-    # ex = Example2()
+    # ex = Ui()
+    ex = Example2()
     ex.show()
     sys.exit(app.exec_())
 
@@ -395,5 +395,8 @@ if __name__ == '__main__':
 
     run()
 
-    if dir_workspace:
+    try:
+        # if dir_workspace:
         shutil.rmtree(dir_workspace)
+    except:  # noqa
+        pass

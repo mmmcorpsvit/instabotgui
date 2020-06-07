@@ -6,14 +6,20 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1253</width>
-    <height>778</height>
+    <width>1260</width>
+    <height>799</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>InstaBot v0.1</string>
   </property>
   <widget class="QWidget" name="centralwidget">
+   <property name="maximumSize">
+    <size>
+     <width>1253</width>
+     <height>766</height>
+    </size>
+   </property>
    <widget class="QPushButton" name="LoadButton">
     <property name="geometry">
      <rect>
@@ -64,6 +70,22 @@
     </property>
     <property name="text">
      <string>New</string>
+    </property>
+   </widget>
+   <widget class="QLabel" name="label_5">
+    <property name="geometry">
+     <rect>
+      <x>920</x>
+      <y>10</y>
+      <width>47</width>
+      <height>13</height>
+     </rect>
+    </property>
+    <property name="text">
+     <string>https://github.com/timgrossmann/InstaPy/blob/b9994688ce59a7b2cdac3451315ac91cb01154c7/DOCUMENTATION.md#unfollowing</string>
+    </property>
+    <property name="openExternalLinks">
+     <bool>true</bool>
     </property>
    </widget>
    <widget class="QWidget" name="">
