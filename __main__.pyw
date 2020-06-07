@@ -1,5 +1,8 @@
 import sys
 import os
+import tempfile
+import shutil
+from shutil import copyfile
 
 import logging
 # from inspect import Parameter
@@ -130,6 +133,7 @@ class Ui(QMainWindow):
             return None
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
+        gecko_driver_path = None
 
         # set_workspace('c:\\1111\\')
 
@@ -145,7 +149,10 @@ class Ui(QMainWindow):
             # x['browser_executable_path'] = os.path.join(dir_path, 'FirefoxPortable32\\FirefoxPortable.exe')
 
         if 'geckodriver_path' not in x:
-            x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
+            gecko_driver_path = tempfile.mkdtemp()
+            copyfile(os.path.join(dir_path, 'geckodriver.exe'), os.path.join(gecko_driver_path, 'geckodriver.exe'))
+            # x['geckodriver_path'] = os.path.join(dir_path, 'geckodriver.exe')
+            x['geckodriver_path'] = os.path.join(gecko_driver_path, 'geckodriver.exe')
 
         if 'want_check_browser' not in x:
             x['want_check_browser'] = False
@@ -172,6 +179,9 @@ class Ui(QMainWindow):
         # x = stages[len(stages)].value
         # insta.end()
 
+        # ------------------------
+        if gecko_driver_path:
+            shutil.rmtree(gecko_driver_path)
         # --------------------------------------------
         logging.info('End working')
         pass
