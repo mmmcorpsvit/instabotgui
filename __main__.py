@@ -162,8 +162,6 @@ class Ui(QMainWindow):
         dir_path = os.path.dirname(os.path.realpath(__file__))
         # gecko_driver_path = None
 
-        # set_workspace('c:\\1111\\')
-
         x = stages[0].values
         x['username'] = 'gloss_dp'
         x['password'] = 'UKJCwev'
@@ -189,6 +187,9 @@ class Ui(QMainWindow):
         #                   browser_executable_path=r"D:\Program Files444\firefox.exe")
 
         session = InstaPy(**x)
+
+        # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
+        session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
 
         # with smart_run(session, threaded=True):
         with smart_run(session):
@@ -389,4 +390,10 @@ def run():
 
 
 if __name__ == '__main__':
+    dir_workspace = tempfile.mkdtemp()
+    set_workspace(dir_workspace)
+
     run()
+
+    if dir_workspace:
+        shutil.rmtree(dir_workspace)

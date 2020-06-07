@@ -109,7 +109,9 @@ def add_actions2(action_list: list, cls, except_list: list):
 
 # ACTIONS_LIST.append(InstaAction('InstaPy'))
 
-add_actions(ACTIONS_LIST, InstaPy, ['end', ])
+
+add_actions(ACTIONS_LIST, InstaPy, ['end', 'set_mandatory_language'])
+# add_actions(ACTIONS_LIST, InstaPy, ['end', ])
 pass
 
 

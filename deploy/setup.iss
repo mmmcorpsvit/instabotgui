@@ -28,11 +28,16 @@ Compression=lzma2/max
 SolidCompression=yes
 WizardStyle=modern
 PrivilegesRequired=admin
+DisableWelcomePage=no
 
 
 [Languages]
 ;Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "russian"; MessagesFile: "compiler:Languages\Russian.isl"
+
+[Messages]
+WelcomeLabel2=Запускать приложение нужно с правами администратора!%n%nУбедитесь что папка %TEMP% не использует кирилицу!%n%nНе устанавливайте софт в папку содержащие сымволы кирилицы!%n%nКирилица в параметрах программы может вызвать ошибки!
+
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"; Flags: unchecked
@@ -57,6 +62,13 @@ Name: "{autodesktop}\{#MyAppName}"; Filename: "{app}\.venv\python.exe"; WorkingD
 
 
 [Code]
+procedure InitializeWizard();
+begin
+  WizardForm.WelcomeLabel2.Font.Style := [fsBold]; //Bold
+  WizardForm.WelcomeLabel2.Font.Color := clRed; // And red colour
+end;
+
+
 procedure SetElevationBit(Filename: string);
 var
   Buffer: string;
