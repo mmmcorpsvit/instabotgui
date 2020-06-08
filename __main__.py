@@ -8,16 +8,17 @@ import logging
 # from inspect import Parameter
 from copy import deepcopy
 # from inspect import Parameter
-from PyQt5.QtCore import QObject, pyqtSignal
-from PyQt5.QtGui import QTextCursor
-from instapy import InstaPy, smart_run, set_workspace
+from PyQt5 import QtCore
+from PyQt5.QtCore import QObject, pyqtSignal, QUrl, Qt
+from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices
+from PyQt5.QtQml import QQmlApplicationEngine
 
 # from core import log_handle
-from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
+# from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
 
 from PyQt5.QtWidgets import QTreeView, QVBoxLayout, \
     QApplication, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QTextEdit, QWidget, QGridLayout, QLabel, \
-    QLineEdit
+    QLineEdit, QToolBar, QAction, qApp, QDesktopWidget, QSizePolicy
 from PyQt5.uic import loadUi  # noqa
 
 from pyqtgraph.parametertree import ParameterTree
@@ -45,6 +46,7 @@ class Stream(QObject):
 
 
 class Ui(QMainWindow):
+    # class Ui(QWidget):
     new_button: QPushButton = None
 
     load_button: QPushButton = None
@@ -110,6 +112,8 @@ class Ui(QMainWindow):
         self.stages_list.itemSelectionChanged.connect(self.stages_listitemSelectionChanged)
 
         # sys.stdout = Stream(newText=self.onUpdateText)
+
+        self.setLayout(self.gridLayout)
 
         sys.stdout = Stream(newText=self.onUpdateText)
         sys.stderr = Stream(newText=self.onUpdateText)
@@ -186,6 +190,7 @@ class Ui(QMainWindow):
         #                   password='UKJCwev',
         #                   browser_executable_path=r"D:\Program Files444\firefox.exe")
 
+        from instapy import InstaPy, smart_run, set_workspace
         session = InstaPy(**x)
 
         # with smart_run(session, threaded=True):
@@ -338,7 +343,8 @@ class Example(QWidget):
         self.show()
 
 
-class Example2(QWidget):
+class Example2(QMainWindow):
+    toolbar: QToolBar
 
     def __init__(self):
         super().__init__()
@@ -346,6 +352,64 @@ class Example2(QWidget):
         self.initUI()
 
     def initUI(self):
+        # actions
+        action_new_file = QAction(QIcon('assets/new.svg'), 'New', self)
+        # action_new_file = QAction(QIcon.fromTheme("SP_FileIcon"), 'New', self)
+        action_new_file.setShortcut('Ctrl+N')
+        # action_new_file.triggered.connect(qApp.quit)
+        action_new_file.triggered.connect(self.action_new_file)
+
+        action_save_file = QAction(QIcon('assets/save.png'), 'Save', self)
+        action_save_file.setShortcut('Ctrl+S')
+        # action_save_file.triggered.connect(qApp.save)
+
+        action_save_as_file = QAction(QIcon('assets/save_as.png'), 'Save as', self)
+        action_save_as_file.setShortcut('Ctrl+Shift+S')
+        # action_save_as_file.triggered.connect(qApp.save_as)
+
+        action_help = QAction(QIcon('assets/help.png'), 'Help', self)
+        action_help.setShortcut('F1')
+        action_help.triggered.connect(lambda: QDesktopServices.openUrl(
+            QUrl('https://github.com/timgrossmann/InstaPy/blob/master/DOCUMENTATION.md#actions')))
+
+        # -----------------
+        action_stage_run = QAction(QIcon('assets/run.png'), 'Run', self)
+        action_stage_run.setShortcut('F5')
+        action_stage_run.triggered.connect(self.action_stage_run)
+
+        action_stage_stop = QAction(QIcon('assets/stop.png'), 'Run', self)
+        action_stage_stop.setShortcut('F9')
+        action_stage_stop.setDisabled(True)
+        action_stage_stop.triggered.connect(self.action_stage_stop)
+
+        # ---------------------
+        # self.spacer = QWidget()
+        # self.spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
+
+        self.toolbar = self.addToolBar('New')
+        self.addToolBar(QtCore.Qt.ToolBarArea(QtCore.Qt.TopToolBarArea), self.toolbar)
+
+        self.toolbar.addAction(action_new_file)
+        self.toolbar.addSeparator()
+
+        self.toolbar.addAction(action_save_file)
+        self.toolbar.addAction(action_save_as_file)
+        # self.toolbar.addWidget(self.spacer)
+        self.toolbar.addSeparator()
+
+        # --------------------
+        self.toolbar.addAction(action_stage_run)
+        self.toolbar.addAction(action_stage_stop)
+        # self.toolbar.addWidget(self.spacer)
+        self.toolbar.addSeparator()
+
+        # --------------------
+        self.toolbar.addAction(action_help)
+        # self.toolbar.setAlignment(Qt.AlignRight | Qt.AlignBottom)
+
+        # toolbar = QToolBar()
+        # newButton = QToolButton()
+
         title = QLabel('Title')
         author = QLabel('Author')
         review = QLabel('Review')
@@ -354,23 +418,42 @@ class Example2(QWidget):
         authorEdit = QLineEdit()
         reviewEdit = QTextEdit()
 
-        grid = QGridLayout()
-        grid.setSpacing(10)
+        self.grid = QGridLayout()
+        self.grid.setSpacing(10)
 
-        grid.addWidget(title, 1, 0)
-        grid.addWidget(titleEdit, 1, 1)
+        self.grid.addWidget(title, 1, 0)
+        self.grid.addWidget(titleEdit, 1, 1)
 
-        grid.addWidget(author, 2, 0)
-        grid.addWidget(authorEdit, 2, 1)
+        self.grid.addWidget(author, 2, 0)
+        self.grid.addWidget(authorEdit, 2, 1)
 
-        grid.addWidget(review, 3, 0)
-        grid.addWidget(reviewEdit, 3, 1, 5, 1)
+        self.grid.addWidget(review, 3, 0)
+        self.grid.addWidget(reviewEdit, 3, 1, 5, 1)
 
-        self.setLayout(grid)
+        self.setLayout(self.grid)
 
-        self.setGeometry(300, 300, 350, 300)
-        self.setWindowTitle('Review')
+
+        self.setGeometry(200, 200, 1000, 600)
+        # self.setSizePolicy()
+        self.setWindowTitle('InstagramBot v0.1')
+        self.setWindowIcon(QIcon('assets/icon.png'))
+        self.center()
         self.show()
+
+    def center(self):
+        qr = self.frameGeometry()
+        cp = QDesktopWidget().availableGeometry().center()
+        qr.moveCenter(cp)
+        self.move(qr.topLeft())
+
+    def action_new_file(self):
+        pass
+
+    def action_stage_run(self):
+        pass
+
+    def action_stage_stop(self):
+        pass
 
 
 def run():
@@ -378,11 +461,17 @@ def run():
 
     app = QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet())
+
+    engine = QQmlApplicationEngine()
+    # engine.quit.connect(app.quit)
+    # engine.load('main.ui.qml')
+    # engine.load('main.qml')
+
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
 
     # ex = Ui()
     ex = Example2()
-    ex.show()
+    # ex.show()
     sys.exit(app.exec_())
 
     # if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
@@ -390,13 +479,14 @@ def run():
 
 
 if __name__ == '__main__':
-    dir_workspace = tempfile.mkdtemp()
-    set_workspace(dir_workspace)
+    # dir_workspace = tempfile.mkdtemp()
+    # set_workspace(dir_workspace)
 
     run()
 
     try:
+        pass
         # if dir_workspace:
-        shutil.rmtree(dir_workspace)
+        # shutil.rmtree(dir_workspace)
     except:  # noqa
         pass
