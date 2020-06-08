@@ -5,11 +5,9 @@ import shutil
 import logging
 from copy import deepcopy
 
-from PyQt5 import QtCore
 from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices
-from PyQt5.QtQml import QQmlApplicationEngine
-from PyQt5.QtWidgets import QApplication, QListWidget, QMainWindow, QPlainTextEdit, QTextEdit, QWidget, QGridLayout, \
+from PyQt5.QtWidgets import QApplication, QListWidget, QMainWindow, QTextEdit, QWidget, QGridLayout, \
     QLabel, QAction, QDesktopWidget, QFileDialog
 
 from pyqtgraph.parametertree import ParameterTree
@@ -25,23 +23,9 @@ from log_handle import MyLogHandler
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
 
-class QTextEditLogger(logging.Handler, QtCore.QObject):
-    appendPlainText = QtCore.pyqtSignal(str)
-
-    def __init__(self, parent):
-        super().__init__()
-        QtCore.QObject.__init__(self)
-        self.widget = QPlainTextEdit(parent)
-        self.widget.setReadOnly(True)
-        self.appendPlainText.connect(self.widget.appendPlainText)
-
-    def emit(self, record):
-        msg = self.format(record)
-        self.appendPlainText.emit(msg)
-
-
 class MainWindow(QMainWindow):
     current_stage = None
+    path = ''
 
     def __init__(self):
         super().__init__()
@@ -118,6 +102,7 @@ class MainWindow(QMainWindow):
 
         # --------------------
         self.actions_list = QListWidget()
+        self.actions_list.setWordWrap(True)
         self.actions_list.doubleClicked.connect(self.actions_listDoubleClicked)
 
         self.stages_list = QListWidget()
@@ -125,6 +110,7 @@ class MainWindow(QMainWindow):
         self.stages_list.itemSelectionChanged.connect(self.stages_listitemSelectionChanged)
 
         self.properties_tree = ParameterTree()
+
         self.log_textEdit = QTextEdit()
 
         # --------------------
@@ -198,25 +184,6 @@ class MainWindow(QMainWindow):
         print('Welcome to InstaBot v0.1**************')
         pass
 
-    def actions_listDoubleClicked(self, qmodelindex):  # noqa
-        # add new action to stages list
-        index = self.actions_list.currentRow()
-        _new_object = insta_clone(ACTIONS_LIST[index])
-
-        self.stages_list.insertItem(self.stages_list.count() - 1, _new_object)
-        pass
-
-    def stages_listDoubleClicked(self, qmodelindex):  # noqa
-        # remove action from stages list
-        index = self.stages_list.currentRow()
-        item = self.stages_list.item(index)
-
-        if item.object.name in ['__init__', 'end']:
-            logging.error(f'You cannot remove stage: {item.object.name}')
-            return None
-        self.stages_list.takeItem(index)
-        pass
-
     def action_open_file(self):
         path, _ = QFileDialog.getOpenFileName(parent=self, caption='Open file', directory='', filter=self.filterTypes)
 
@@ -231,6 +198,26 @@ class MainWindow(QMainWindow):
                 self.path = path
                 self.editor.setPlainText(text)
                 self.update_title()
+
+    def actions_listDoubleClicked(self, qmodelindex):  # noqa
+        # add new action to stages list
+        index = self.actions_list.currentRow()
+        _new_object = insta_clone(ACTIONS_LIST[index])
+
+        self.stages_list.insertItem(self.stages_list.count() - 1, _new_object)
+        pass
+
+    # --------------------
+    def stages_listDoubleClicked(self, qmodelindex):  # noqa
+        # remove action from stages list
+        index = self.stages_list.currentRow()
+        item = self.stages_list.item(index)
+
+        if item.object.name in ['__init__', 'end']:
+            logging.error(f'You cannot remove stage: {item.object.name}')
+            return None
+        self.stages_list.takeItem(index)
+        pass
 
     def properties_tree_change(self, param, changes):
         # print("tree changes:")
@@ -367,7 +354,7 @@ def run():
     app = QApplication(sys.argv)
     # app.setStyleSheet(qdarkstyle.load_stylesheet())
 
-    engine = QQmlApplicationEngine()
+    # engine = QQmlApplicationEngine()
     # engine.quit.connect(app.quit)
     # engine.load('main.ui.qml')
     # engine.load('main.qml')
