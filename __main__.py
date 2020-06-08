@@ -27,6 +27,7 @@ from pyqtgraph.parametertree import Parameter as ParameterForTree
 import qdarkstyle
 
 from insta_bot import insta_clone, InstaPyStartStageItem, InstaPyEndStageItem, get_actions_list, ACTIONS_LIST
+from log_handle import MyLogHandler
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
@@ -36,11 +37,25 @@ os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
 # stages = []
 
-class MyLogingStream(QObject):
-    newText = pyqtSignal(str)
+# class MyLogingStream(QObject):
+#     newText = pyqtSignal(str)
+#
+#     def write(self, text):
+#         self.newText.emit(str(text))
 
-    def write(self, text):
-        self.newText.emit(str(text))
+class QTextEditLogger(logging.Handler, QtCore.QObject):
+    appendPlainText = QtCore.pyqtSignal(str)
+
+    def __init__(self, parent):
+        super().__init__()
+        QtCore.QObject.__init__(self)
+        self.widget = QPlainTextEdit(parent)
+        self.widget.setReadOnly(True)
+        self.appendPlainText.connect(self.widget.appendPlainText)
+
+    def emit(self, record):
+        msg = self.format(record)
+        self.appendPlainText.emit(msg)
 
 
 class MainWindow(QMainWindow):
@@ -51,7 +66,7 @@ class MainWindow(QMainWindow):
         self.filterTypes = 'InstapyBot files (*.insta_json);;'
 
         # ------------------
-        self.setGeometry(200, 200, 1200, 800)
+        self.setGeometry(200, 200, 1200, 850)
         # self.setSizePolicy()
         self.setWindowTitle('InstagramBot v0.1')
         self.setWindowIcon(QIcon('assets/icon.png'))
@@ -157,13 +172,21 @@ class MainWindow(QMainWindow):
         self.setCentralWidget(widget)
 
         # --------------------
-        # sys.stdout = MyLogingStream(newText=self.onUpdateText)
-        # sys.stderr = MyLogingStream(newText=self.onUpdateText)
+        self.setup_logger()
 
+        # --------------------
         self.actions_list.addItems(get_actions_list())
         self.action_new_file()
 
         self.show()
+
+    def setup_logger(self):
+        handler = MyLogHandler(self)
+        # log_text_box = QPlainTextEdit(self)
+        # self.main_layout.addWidget(log_text_box)
+        logging.getLogger().addHandler(handler)
+        logging.getLogger().setLevel(logging.INFO)
+        handler.new_record.connect(self.log_textEdit.append)  # <---- connect QPlainTextEdit.appendPlainText slot
 
     def onUpdateText(self, text):
         cursor = self.log_textEdit.textCursor()
