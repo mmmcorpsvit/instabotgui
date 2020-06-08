@@ -2,46 +2,28 @@ import sys
 import os
 import tempfile
 import shutil
-from shutil import copyfile
-
 import logging
-# from inspect import Parameter
 from copy import deepcopy
-# from inspect import Parameter
+
 from PyQt5 import QtCore
-from PyQt5.QtCore import QObject, pyqtSignal, QUrl, Qt
+from PyQt5.QtCore import QUrl
 from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices
 from PyQt5.QtQml import QQmlApplicationEngine
-
-# from core import log_handle
-# from core.bot import get_actions_list, ACTIONS_LIST, InstaPyStartStageItem, InstaPyEndStageItem, insta_clone
-
-from PyQt5.QtWidgets import QTreeView, QVBoxLayout, \
-    QApplication, QListWidget, QMainWindow, QPlainTextEdit, QPushButton, QTextEdit, QWidget, QGridLayout, QLabel, \
-    QLineEdit, QToolBar, QAction, qApp, QDesktopWidget, QSizePolicy, QFileDialog
-from PyQt5.uic import loadUi  # noqa
+from PyQt5.QtWidgets import QApplication, QListWidget, QMainWindow, QPlainTextEdit, QTextEdit, QWidget, QGridLayout, \
+    QLabel, QAction, QDesktopWidget, QFileDialog
 
 from pyqtgraph.parametertree import ParameterTree
 from pyqtgraph.parametertree import Parameter as ParameterForTree
 
 import qdarkstyle
 
+from instapy import InstaPy, smart_run, set_workspace
+
 from insta_bot import insta_clone, InstaPyStartStageItem, InstaPyEndStageItem, get_actions_list, ACTIONS_LIST
 from log_handle import MyLogHandler
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
-
-# logging.basicConfig(level=logging.DEBUG, format=' %(asctime)s - %(name)s - %(levelname)s - %(message)s')
-
-
-# stages = []
-
-# class MyLogingStream(QObject):
-#     newText = pyqtSignal(str)
-#
-#     def write(self, text):
-#         self.newText.emit(str(text))
 
 class QTextEditLogger(logging.Handler, QtCore.QObject):
     appendPlainText = QtCore.pyqtSignal(str)
@@ -59,7 +41,7 @@ class QTextEditLogger(logging.Handler, QtCore.QObject):
 
 
 class MainWindow(QMainWindow):
-    # toolbar: QToolBar
+    current_stage = None
 
     def __init__(self):
         super().__init__()
@@ -341,7 +323,6 @@ class MainWindow(QMainWindow):
         #                   password='UKJCwev',
         #                   browser_executable_path=r"D:\Program Files444\firefox.exe")
 
-        from instapy import InstaPy, smart_run, set_workspace
         session = InstaPy(**x)
 
         # with smart_run(session, threaded=True):
@@ -402,14 +383,14 @@ def run():
 
 
 if __name__ == '__main__':
-    # dir_workspace = tempfile.mkdtemp()
-    # set_workspace(dir_workspace)
+    dir_workspace = tempfile.mkdtemp()
+    set_workspace(dir_workspace)
 
     run()
 
     try:
-        pass
+        # pass
         # if dir_workspace:
-        # shutil.rmtree(dir_workspace)
+        shutil.rmtree(dir_workspace)
     except:  # noqa
         pass
