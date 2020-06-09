@@ -114,7 +114,8 @@ def add_actions2(action_list: list, cls, except_list: list):
 
 add_actions(ACTIONS_LIST, InstaPy,
             ['end', 'set_mandatory_language', 'check_character_set', 'engage_with_posts', 'fetch_smart_comments',
-             'interact_user_following', 'is_mandatory_character', 'set_do_like', 'set_sleep_reduce', 'set_switch_language'])
+             'interact_user_following', 'is_mandatory_character', 'set_do_like', 'set_sleep_reduce',
+             'set_switch_language'])
 # add_actions(ACTIONS_LIST, InstaPy, ['end', ])
 pass
 
@@ -143,12 +144,13 @@ _el.setText(_InstaPyStartStageItem.decsription)
 _el.object = _InstaPyStartStageItem
 InstaPyStartStageItem = _el
 
+
 # end stage
-_InstaPyStartStageItem = InstaAction(InstaPy, 'end')
-_el = QListWidgetItem()
-_el.setText(_InstaPyStartStageItem.decsription)
-_el.object = _InstaPyStartStageItem
-InstaPyEndStageItem = _el
+# _InstaPyStartStageItem = InstaAction(InstaPy, 'end')
+# _el = QListWidgetItem()
+# _el.setText(_InstaPyStartStageItem.decsription)
+# _el.object = _InstaPyStartStageItem
+# InstaPyEndStageItem = _el
 
 
 # if __name__ == '__main__':
@@ -194,8 +196,8 @@ class ExecuteScenario(QThread):
             for index, stage in enumerate(self.stages):
                 # current_values = deepcopy(stage.values)
 
-                # skip init and end stages
-                if index == 0 or index == len(self.stages) - 1:
+                # skip init stage
+                if index == 0:
                     continue
 
                 # convert text (valid for propretry editor) to list

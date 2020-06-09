@@ -1,3 +1,4 @@
+import json
 import sys
 import os
 import tempfile
@@ -17,7 +18,7 @@ import qdarkstyle
 
 from instapy import set_workspace
 
-from insta_bot import insta_clone, InstaPyStartStageItem, InstaPyEndStageItem, get_actions_list, ACTIONS_LIST, \
+from insta_bot import insta_clone, InstaPyStartStageItem, get_actions_list, ACTIONS_LIST, \
     ExecuteScenario
 from log_handle import MyLogHandler
 
@@ -32,50 +33,6 @@ os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 #
 # # install exception hook: without this, uncaught exception would cause application to exit
 # sys.excepthook = trap_exc_during_debug
-
-
-# class Worker(QObject):
-#     """
-#     Must derive from QObject in order to emit signals, connect slots to other signals, and operate in a QThread.
-#     """
-#
-#     sig_step = pyqtSignal(int, str)  # worker id, step description: emitted every step through work() loop
-#     sig_done = pyqtSignal(int)  # worker id: emitted at end of work()
-#     sig_msg = pyqtSignal(str)  # message to be shown to user
-#
-#     def __init__(self, id: int):
-#         super().__init__()
-#         self.__id = id
-#         self.__abort = False
-#
-#     @pyqtSlot()
-#     def work(self):
-#         """
-#         Pretend this worker method does work that takes a long time. During this time, the thread's
-#         event loop is blocked, except if the application's processEvents() is called: this gives every
-#         thread (incl. main) a chance to process events, which in this sample means processing signals
-#         received from GUI (such as abort).
-#         """
-#         thread_name = QThread.currentThread().objectName()
-#         thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
-#         self.sig_msg.emit('Running worker #{} from thread "{}" (#{})'.format(self.__id, thread_name, thread_id))
-#
-#         for step in range(100):
-#             time.sleep(0.1)
-#             self.sig_step.emit(self.__id, 'step ' + str(step))
-#
-#             # check if we need to abort the loop; need to process events to receive signals;
-#             app.processEvents()  # this could cause change to self.__abort
-#             if self.__abort:
-#                 # note that "step" value will not necessarily be same for every thread
-#                 self.sig_msg.emit('Worker #{} aborting work at step {}'.format(self.__id, step))
-#                 break
-#
-#         self.sig_done.emit(self.__id)
-#
-#     def abort(self):
-#         self.sig_msg.emit('Worker #{} notified to abort'.format(self.__id))
-#         self.__abort = True
 
 
 class MainWindow(QMainWindow):
@@ -150,7 +107,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.action_open_file)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(self.action_save_file)
+        # self.toolbar.addAction(self.action_save_file)
         self.toolbar.addAction(self.action_save_as_file)
         # self.toolbar.addWidget(self.spacer)
         self.toolbar.addSeparator()
@@ -252,33 +209,93 @@ class MainWindow(QMainWindow):
         self.current_file_name = None
         self.stages_list.clear()
         self.stages_list.addItem(insta_clone(InstaPyStartStageItem))
-        self.stages_list.addItem(insta_clone(InstaPyEndStageItem))
+        # self.stages_list.addItem(insta_clone(InstaPyEndStageItem))
         self.stages_list.setCurrentRow(0)
         self.actions_list.setCurrentRow(0)
         self.log_textEdit.clear()
-        logging.info('Welcome to InstaBot v0.1---------------')
-        print('Welcome to InstaBot v0.1**************')
-        pass
+        logging.info('Welcome to InstaBot v0.1')
 
     def action_open_file_trigger(self):
         path, _ = QFileDialog.getOpenFileName(parent=self, caption='Open file', directory='', filter=self.filterTypes)
 
         if path:
+
+            self.action_new_file_trigger()
             try:
                 with open(path, 'r') as f:
-                    text = f.read()
-                    f.close()
+                    object_store_list = json.load(f)
+
+                    for index, stage in enumerate(object_store_list):
+
+                        # __init__ always must be !
+                        if index == 0:
+                            self.stages_list.item(0).object.values = stage['values']
+                        else:
+
+                            # create stage
+                            for x in ACTIONS_LIST:
+                                if x.object.name == stage['name']:
+                                    _new_object = insta_clone(x)
+                                    self.stages_list.insertItem(self.stages_list.count(), _new_object)
+
+                                    self.stages_list.item(self.stages_list.count()-1).object.values = stage['values']
+                                    # x = stage['values']
+                                    pass
+                                    # _new_object.values = stage['values']
+
+                                    # self.stages_list.insertItem(self.stages_list.count(), _new_object)
+
+
+
+                                    # break
+
+                        # if stage.values:
+                        #     self.stages_list.item(self.stages_list.count() - 1).object.values = stage.values
+
+                        # x = self.stages_list.item(self.stages_list.count()-1).object.values = stage.values
+                        # pass
+
+                    pass
+
+                    # text = f.read()
+                    # f.close()
             except Exception as e:
                 self.dialog_message(str(e))
             else:
                 self.path = path
-                self.editor.setPlainText(text)
-                self.update_title()
+
+                # self.editor.setPlainText(text)
+                # self.update_title()
 
     def action_save_file_trigger(self):
         pass
 
     def action_save_as_file_trigger(self):
+        path, _ = QFileDialog.getSaveFileName(parent=self, caption='Save as', directory='', filter=self.filterTypes)
+
+        if path:
+            object_store_list = []
+
+            for index in range(self.stages_list.count()):
+                stage = self.stages_list.item(index)
+                object_store_list.append({
+                    'index': index,
+                    'name': stage.object.name,
+                    'values': stage.object.values,
+                })
+
+                pass
+            object_to_store = json.dumps(object_store_list)
+
+            try:
+                with open(path, 'w') as f:
+                    f.write(object_to_store)
+                    # f.close()
+            except Exception as e:
+                self.dialog_message(str(e))
+            else:
+                self.path = path
+
         pass
 
     def actions_listDoubleClicked(self, qmodelindex):  # noqa
@@ -286,7 +303,7 @@ class MainWindow(QMainWindow):
         index = self.actions_list.currentRow()
         _new_object = insta_clone(ACTIONS_LIST[index])
 
-        self.stages_list.insertItem(self.stages_list.count() - 1, _new_object)
+        self.stages_list.insertItem(self.stages_list.count(), _new_object)
         pass
 
     # --------------------
@@ -295,7 +312,7 @@ class MainWindow(QMainWindow):
         index = self.stages_list.currentRow()
         item = self.stages_list.item(index)
 
-        if item.object.name in ['__init__', 'end']:
+        if item.object.name in ['__init__']:
             logging.error(f'You cannot remove stage: {item.object.name}')
             return None
         self.stages_list.takeItem(index)
@@ -358,8 +375,10 @@ class MainWindow(QMainWindow):
         y = [self.stages_list.item(x).object for x in range(self.stages_list.count())]
         stages = deepcopy(y)
 
-        if len(stages) < 2 or stages[0].name != '__init__' or stages[len(stages) - 1].name != 'end':
-            logging.error('First stage must be init, last stage must be end')
+        # if len(stages) < 2 or stages[0].name != '__init__' or stages[len(stages) - 1].name != 'end':
+        if len(stages) < 1 or stages[0].name != '__init__':
+            logging.error('First stage must be init')
+            # logging.error('First stage must be init, last stage must be end')
             return None
 
         dir_path = os.path.dirname(os.path.realpath(__file__))
