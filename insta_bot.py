@@ -1,10 +1,12 @@
+# import logging
 import re
 import inspect
 from copy import deepcopy
 from typing import Mapping, OrderedDict
 
+from PyQt5.QtCore import QThread, pyqtSignal
 from PyQt5.QtWidgets import QListWidgetItem
-from instapy import InstaPy
+from instapy import InstaPy, smart_run
 
 # from instapy import smart_run
 
@@ -65,7 +67,7 @@ class InstaAction:
             if self.call_func.__doc__ \
             else _INSTA_ACTIONS_DESCRIPTIONS.get(func_name, "[ ********* UNKNOWN DESCRIPTION ******** ]")
         # _ = inspect.signature(self.call_func).parameters
-        self.anotation_call = OrderedDict(inspect.signature(self.call_func).parameters) # noqa
+        self.anotation_call = OrderedDict(inspect.signature(self.call_func).parameters)  # noqa
 
         self.values = {}
 
@@ -146,8 +148,68 @@ _el.setText(_InstaPyStartStageItem.decsription)
 _el.object = _InstaPyStartStageItem
 InstaPyEndStageItem = _el
 
+
 # if __name__ == '__main__':
 #     e = get_insta_actions_list()
 #     print(e)
 #     pass
 
+
+class ExecuteScenario(QThread):
+    # sig_step = pyqtSignal(int, str)  # worker id, step description: emitted every step through work() loop
+    sig_done = pyqtSignal(int)  # worker id: emitted at end of work()
+
+    # sig_msg = pyqtSignal(str)  # message to be shown to user
+
+    def __init__(self, stages, instapy_start_values):
+        QThread.__init__(self)
+        self.stages = stages
+        self.instapy_start_values = instapy_start_values
+
+    def __del__(self):
+        self.wait()
+
+    # def execute_scenario(stages, instapy_start_values):
+    def run(self):
+        idx = 1
+
+        # logging.info('Start working')
+        session = InstaPy(**self.instapy_start_values)
+
+        with smart_run(session, threaded=True):
+            # with smart_run(session):
+            # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
+            session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
+
+            for index, stage in enumerate(self.stages):
+                # current_values = deepcopy(stage.values)
+
+                # skip init and end stages
+                if index == 0 or index == len(self.stages) - 1:
+                    continue
+
+                # convert text (valid for propretry editor) to list
+                current_values = {
+                    key: value.split() if stage.anotation_call[key].annotation.__name__ == 'list' else value for
+                    (key, value) in stage.values.items()}
+
+                # call function from instance
+                f = getattr(session, stage.name)
+                f(**current_values)  # noqa https://youtrack.jetbrains.com/issue/PY-27935
+
+                # self.emit(SIGNAL('add_post(QString)'), top_post)
+                # self.sig_step.emit(idx, )
+                self.sleep(2)
+                pass
+
+        self.sig_done.emit(idx)
+
+        # x = stages[len(stages)].value
+        # insta.end()
+
+        # ------------------------
+        # if gecko_driver_path:
+        #     shutil.rmtree(gecko_driver_path)
+        # --------------------------------------------
+        pass
+        # logging.info('End working')

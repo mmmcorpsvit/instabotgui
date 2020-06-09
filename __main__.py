@@ -5,7 +5,7 @@ import shutil
 import logging
 from copy import deepcopy
 
-from PyQt5.QtCore import QUrl
+from PyQt5.QtCore import QUrl, QObject, pyqtSignal, pyqtSlot, QThread
 from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices
 from PyQt5.QtWidgets import QApplication, QListWidget, QMainWindow, QTextEdit, QWidget, QGridLayout, \
     QLabel, QAction, QDesktopWidget, QFileDialog
@@ -15,21 +15,81 @@ from pyqtgraph.parametertree import Parameter as ParameterForTree
 
 import qdarkstyle
 
-from instapy import InstaPy, smart_run, set_workspace
+from instapy import set_workspace
 
-from insta_bot import insta_clone, InstaPyStartStageItem, InstaPyEndStageItem, get_actions_list, ACTIONS_LIST
+from insta_bot import insta_clone, InstaPyStartStageItem, InstaPyEndStageItem, get_actions_list, ACTIONS_LIST, \
+    ExecuteScenario
 from log_handle import MyLogHandler
 
 os.environ['PYQTGRAPH_QT_LIB'] = 'PyQt5'
 
 
+#
+# def trap_exc_during_debug(*args):
+#     # when app raises uncaught exception, print info
+#     print(args)
+#
+#
+# # install exception hook: without this, uncaught exception would cause application to exit
+# sys.excepthook = trap_exc_during_debug
+
+
+# class Worker(QObject):
+#     """
+#     Must derive from QObject in order to emit signals, connect slots to other signals, and operate in a QThread.
+#     """
+#
+#     sig_step = pyqtSignal(int, str)  # worker id, step description: emitted every step through work() loop
+#     sig_done = pyqtSignal(int)  # worker id: emitted at end of work()
+#     sig_msg = pyqtSignal(str)  # message to be shown to user
+#
+#     def __init__(self, id: int):
+#         super().__init__()
+#         self.__id = id
+#         self.__abort = False
+#
+#     @pyqtSlot()
+#     def work(self):
+#         """
+#         Pretend this worker method does work that takes a long time. During this time, the thread's
+#         event loop is blocked, except if the application's processEvents() is called: this gives every
+#         thread (incl. main) a chance to process events, which in this sample means processing signals
+#         received from GUI (such as abort).
+#         """
+#         thread_name = QThread.currentThread().objectName()
+#         thread_id = int(QThread.currentThreadId())  # cast to int() is necessary
+#         self.sig_msg.emit('Running worker #{} from thread "{}" (#{})'.format(self.__id, thread_name, thread_id))
+#
+#         for step in range(100):
+#             time.sleep(0.1)
+#             self.sig_step.emit(self.__id, 'step ' + str(step))
+#
+#             # check if we need to abort the loop; need to process events to receive signals;
+#             app.processEvents()  # this could cause change to self.__abort
+#             if self.__abort:
+#                 # note that "step" value will not necessarily be same for every thread
+#                 self.sig_msg.emit('Worker #{} aborting work at step {}'.format(self.__id, step))
+#                 break
+#
+#         self.sig_done.emit(self.__id)
+#
+#     def abort(self):
+#         self.sig_msg.emit('Worker #{} notified to abort'.format(self.__id))
+#         self.__abort = True
+
+
 class MainWindow(QMainWindow):
+    filterTypes = 'InstapyBot files (*.insta_json);;'
+
     current_stage = None
     path = ''
+    get_thread = None
 
     def __init__(self):
         super().__init__()
-        self.filterTypes = 'InstapyBot files (*.insta_json);;'
+
+        QThread.currentThread().setObjectName('main')
+        # self.communicate_execution = CommunicateExecution()
 
         # ------------------
         self.setGeometry(200, 200, 1200, 850)
@@ -39,40 +99,40 @@ class MainWindow(QMainWindow):
         self.center()
 
         # ------------------ actions
-        action_new_file = QAction(QIcon('assets/new.svg'), 'New', self)
+        self.action_new_file = QAction(QIcon('assets/new.svg'), 'New', self)
         # action_new_file = QAction(QIcon.fromTheme("SP_FileIcon"), 'New', self)
-        action_new_file.setShortcut('Ctrl+N')
+        self.action_new_file.setShortcut('Ctrl+N')
         # action_new_file.triggered.connect(qApp.quit)
-        action_new_file.triggered.connect(self.action_new_file)
+        self.action_new_file.triggered.connect(self.action_new_file_trigger)
 
         # action_load_file
-        action_open_file = QAction(QIcon('assets/open.png'), 'Open', self)
-        action_open_file.setShortcut('Ctrl+O')
-        action_open_file.triggered.connect(self.action_open_file)
+        self.action_open_file = QAction(QIcon('assets/open.png'), 'Open', self)
+        self.action_open_file.setShortcut('Ctrl+O')
+        self.action_open_file.triggered.connect(self.action_open_file_trigger)
 
-        action_save_file = QAction(QIcon('assets/save.png'), 'Save', self)
-        action_save_file.setShortcut('Ctrl+S')
+        self.action_save_file = QAction(QIcon('assets/save.png'), 'Save', self)
+        self.action_save_file.setShortcut('Ctrl+S')
         # action_save_file.triggered.connect(qApp.save)
 
-        action_save_as_file = QAction(QIcon('assets/save_as.png'), 'Save as', self)
-        action_save_as_file.setShortcut('Ctrl+Shift+S')
+        self.action_save_as_file = QAction(QIcon('assets/save_as.png'), 'Save as', self)
+        self.action_save_as_file.setShortcut('Ctrl+Shift+S')
         # action_save_as_file.triggered.connect(qApp.save_as)
 
-        action_help = QAction(QIcon('assets/help.png'), 'Help', self)
-        action_help.setShortcut('F1')
-        action_help.triggered.connect(lambda: QDesktopServices.openUrl(
+        self.action_help = QAction(QIcon('assets/help.png'), 'Help', self)
+        self.action_help.setShortcut('F1')
+        self.action_help.triggered.connect(lambda: QDesktopServices.openUrl(
             QUrl('https://github.com/timgrossmann/InstaPy/blob/master/DOCUMENTATION.md#actions')))
 
         # -----------------
-        action_stage_run = QAction(QIcon('assets/run.png'), 'Run', self)
-        action_stage_run.setShortcut('F5')
-        action_stage_run.triggered.connect(self.action_stage_run)
+        self.action_stage_run = QAction(QIcon('assets/run.png'), 'Run', self)
+        self.action_stage_run.setShortcut('F5')
+        self.action_stage_run.triggered.connect(self.action_stage_run_trigger)
 
-        action_stage_stop = QAction(QIcon('assets/stop.png'), 'Stop', self)
-        action_stage_stop.setShortcut('F9')
-        action_stage_stop.setDisabled(True)
-        action_stage_stop.setVisible(False)
-        action_stage_stop.triggered.connect(self.action_stage_stop)
+        self.action_stage_stop = QAction(QIcon('assets/stop.png'), 'Stop', self)
+        self.action_stage_stop.setShortcut('F9')
+        self.action_stage_stop.setDisabled(True)
+        # self.action_stage_stop.setVisible(False)
+        self.action_stage_stop.triggered.connect(self.action_stage_stop_trigger)
 
         # ---------------------
         # self.spacer = QWidget()
@@ -82,23 +142,23 @@ class MainWindow(QMainWindow):
         self.toolbar.setMovable(False)
         # self.addToolBar(QtCore.Qt.ToolBarArea(QtCore.Qt.TopToolBarArea), self.toolbar)
 
-        self.toolbar.addAction(action_new_file)
+        self.toolbar.addAction(self.action_new_file)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(action_open_file)
+        self.toolbar.addAction(self.action_open_file)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(action_save_file)
-        self.toolbar.addAction(action_save_as_file)
+        self.toolbar.addAction(self.action_save_file)
+        self.toolbar.addAction(self.action_save_as_file)
         # self.toolbar.addWidget(self.spacer)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(action_stage_run)
-        self.toolbar.addAction(action_stage_stop)
+        self.toolbar.addAction(self.action_stage_run)
+        self.toolbar.addAction(self.action_stage_stop)
         # self.toolbar.addWidget(self.spacer)
         self.toolbar.addSeparator()
 
-        self.toolbar.addAction(action_help)
+        self.toolbar.addAction(self.action_help)
 
         # --------------------
         self.actions_list = QListWidget()
@@ -144,7 +204,7 @@ class MainWindow(QMainWindow):
 
         # --------------------
         self.actions_list.addItems(get_actions_list())
-        self.action_new_file()
+        self.action_new_file_trigger()
 
         self.show()
 
@@ -155,6 +215,14 @@ class MainWindow(QMainWindow):
         logging.getLogger().addHandler(handler)
         logging.getLogger().setLevel(logging.INFO)
         handler.new_record.connect(self.log_textEdit.append)  # <---- connect QPlainTextEdit.appendPlainText slot
+
+        class Stream(QObject):
+            newText = pyqtSignal(str)
+
+            def write(self, text):
+                self.newText.emit(str(text))
+
+        sys.stdout = Stream(newText=self.onUpdateText)  # noqa
 
     def onUpdateText(self, text):
         cursor = self.log_textEdit.textCursor()
@@ -173,7 +241,7 @@ class MainWindow(QMainWindow):
         qr.moveCenter(cp)
         self.move(qr.topLeft())
 
-    def action_new_file(self):
+    def action_new_file_trigger(self):
         self.stages_list.clear()
         self.stages_list.addItem(insta_clone(InstaPyStartStageItem))
         self.stages_list.addItem(insta_clone(InstaPyEndStageItem))
@@ -184,7 +252,7 @@ class MainWindow(QMainWindow):
         print('Welcome to InstaBot v0.1**************')
         pass
 
-    def action_open_file(self):
+    def action_open_file_trigger(self):
         path, _ = QFileDialog.getOpenFileName(parent=self, caption='Open file', directory='', filter=self.filterTypes)
 
         if path:
@@ -271,10 +339,7 @@ class MainWindow(QMainWindow):
         self.properties_tree.setParameters(p, showTop=False)
         p.sigTreeStateChanged.connect(self.properties_tree_change)
 
-    def action_stage_run(self):
-        logging.info('Start working')
-        # --------------------------------------------
-
+    def action_stage_run_trigger(self):
         # create tasks list (just do deep copy)
         y = [self.stages_list.item(x).object for x in range(self.stages_list.count())]
         stages = deepcopy(y)
@@ -310,59 +375,81 @@ class MainWindow(QMainWindow):
         #                   password='UKJCwev',
         #                   browser_executable_path=r"D:\Program Files444\firefox.exe")
 
-        session = InstaPy(**x)
+        # logging.info('Start working')
+        # return None
 
-        # with smart_run(session, threaded=True):
-        with smart_run(session):
-            # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
-            session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
+        # idx = 1
+        # worker = Worker(idx)
+        # # self.action_stage_run.
+        #
+        # thread = QThread()
+        # thread.setObjectName('thread_' + str(idx))
+        # self.__threads.append((thread, worker))  # need to store worker too otherwise will be gc'd
+        # worker.moveToThread(thread)
+        #
+        # # get progress messages from worker:
+        # worker.sig_step.connect(self.on_worker_step)
+        # worker.sig_done.connect(self.on_worker_done)
+        # worker.sig_msg.connect(self.log.append)
+        #
+        # # control worker:
+        # self.sig_abort_workers.connect(worker.abort)
 
-            for index, stage in enumerate(stages):
-                # current_values = deepcopy(stage.values)
+        # get read to start worker:
+        # self.sig_start.connect(worker.work)  # needed due to PyCharm debugger bug (!); comment out next line
+        # thread.started.connect(worker.work)
+        # thread.start()  # this will emit 'started' and start thread's event loop
 
-                # skip init and end stages
-                if index == 0 or index == len(stages):
-                    continue
+        self.action_stage_run.setDisabled(True)
+        self.action_stage_stop.setEnabled(True)
 
-                # convert text (valid for propretry editor) to list
-                current_values = {
-                    key: value.split() if stage.anotation_call[key].annotation.__name__ == 'list' else value for
-                    (key, value) in stage.values.items()}
+        self.get_thread = ExecuteScenario(stages=stages, instapy_start_values=x)
 
-                # call function from instance
-                f = getattr(session, stage.name)
-                f(**current_values)  # noqa https://youtrack.jetbrains.com/issue/PY-27935
-                pass
+        # self.get_thread.sig_step.connect(self.on_worker_step)
+        self.get_thread.sig_done.connect(self.on_worker_done)
+        # self.get_thread.sig_msg.connect(self.log_textEdit.append)
 
-        # x = stages[len(stages)].value
-        # insta.end()
+        # control worker:
+        # self.sig_abort_workers.connect(worker.abort)
+        # get read to start worker:
+        # self.sig_start.connect(worker.work)  # needed due to PyCharm debugger bug (!); comment out next line
+        # self.get_thread.started.connect(worker.work)
+        # self.get_thread.connect(self.communicate_execution.done)
+        # self.connect(self.get_thread, SIGNAL("finished()"), self.done)
+        self.get_thread.start()
 
-        # ------------------------
-        # if gecko_driver_path:
-        #     shutil.rmtree(gecko_driver_path)
-        # --------------------------------------------
+    # @pyqtSlot(int, str)
+    # def on_worker_step(self, worker_id: int, data: str):
+    #     self.log_textEdit.append('Worker #{}: {}'.format(worker_id, data))
+    #     # self.progress.append('{}: {}'.format(worker_id, data))
 
-        logging.info('End working')
+    @pyqtSlot(int)
+    def on_worker_done(self, worker_id):
+        self.action_stage_run.setEnabled(True)
+        self.action_stage_stop.setDisabled(True)
 
-    def action_stage_stop(self):
+        # self.log_textEdit.append('worker #{} done'.format(worker_id))
+        # # self.progress.append('-- Worker {} DONE'.format(worker_id))
+        # self.__workers_done += 1
+        # if self.__workers_done == self.NUM_THREADS:
+        #     self.log_textEdit.append('No more workers active')
+        #
+        #     # self.action_stage_stop.setDisabled(True)
+        #
+        #     self.action_start_stop.setEnabled(True)
+        #     self.action_stage_stop.setDisabled(True)
+        #     # self.__threads = None
+
+    def action_stage_stop_trigger(self):
+        self.get_thread.setTerminationEnabled(True)
         pass
 
 
 def run():
-    # handler.setFormatter(logging.Formatter('%(levelname)s: %(filename)s - %(message)s'))
-
     app = QApplication(sys.argv)
-    # app.setStyleSheet(qdarkstyle.load_stylesheet())
-
-    # engine = QQmlApplicationEngine()
-    # engine.quit.connect(app.quit)
-    # engine.load('main.ui.qml')
-    # engine.load('main.qml')
-
     app.setStyleSheet(qdarkstyle.load_stylesheet(qt_api=os.environ['PYQTGRAPH_QT_LIB']))
 
     ex = MainWindow()
-    # ex.show()
     sys.exit(app.exec_())
 
     # if (sys.flags.interactive != 1) or not hasattr(QtCore, 'PYQT_VERSION'):
@@ -370,10 +457,10 @@ def run():
 
 
 if __name__ == '__main__':
+    run()
+
     dir_workspace = tempfile.mkdtemp()
     set_workspace(dir_workspace)
-
-    run()
 
     try:
         # pass
