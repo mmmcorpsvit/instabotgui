@@ -385,8 +385,8 @@ class MainWindow(QMainWindow):
         # gecko_driver_path = None
 
         x = stages[0].values
-        x['username'] = 'gloss_dp'
-        x['password'] = 'UKJCwev'
+        # x['username'] = 'gloss_dp'
+        # x['password'] = 'UKJCwev'
 
         x['split_db'] = True
 
