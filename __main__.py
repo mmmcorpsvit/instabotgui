@@ -404,6 +404,7 @@ class MainWindow(QMainWindow):
         self.action_stage_stop.setEnabled(True)
 
         self.get_thread = ExecuteScenario(stages=stages, instapy_start_values=x)
+        self.get_thread.setTerminationEnabled(True)
 
         # self.get_thread.sig_step.connect(self.on_worker_step)
         self.get_thread.sig_done.connect(self.on_worker_done)
@@ -441,7 +442,8 @@ class MainWindow(QMainWindow):
         #     # self.__threads = None
 
     def action_stage_stop_trigger(self):
-        self.get_thread.setTerminationEnabled(True)
+        # self.get_thread.terminate()
+        self.get_thread.stop()
         pass
 
 

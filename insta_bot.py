@@ -156,6 +156,9 @@ InstaPyEndStageItem = _el
 
 
 class ExecuteScenario(QThread):
+    idx = 1
+    session = None
+
     # sig_step = pyqtSignal(int, str)  # worker id, step description: emitted every step through work() loop
     sig_done = pyqtSignal(int)  # worker id: emitted at end of work()
 
@@ -166,20 +169,25 @@ class ExecuteScenario(QThread):
         self.stages = stages
         self.instapy_start_values = instapy_start_values
 
-    def __del__(self):
-        self.wait()
+    def stop(self):
+        if self.session:
+            self.session.end()
+        self.terminate()
+        self.sig_done.emit(self.idx)
+
+    # def __del__(self):
+    #     self.wait()
 
     # def execute_scenario(stages, instapy_start_values):
     def run(self):
-        idx = 1
 
         # logging.info('Start working')
-        session = InstaPy(**self.instapy_start_values)
+        self.session = InstaPy(**self.instapy_start_values)  # noqa
 
-        with smart_run(session, threaded=True):
+        with smart_run(self.session, threaded=True):
             # with smart_run(session):
             # Available character sets: LATIN, GREEK, CYRILLIC, ARABIC, HEBREW, CJK, HANGUL, HIRAGANA, KATAKANA and THAI
-            session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
+            self.session.set_mandatory_language(enabled=True, character_set=['LATIN', 'CYRILLIC'])
 
             for index, stage in enumerate(self.stages):
                 # current_values = deepcopy(stage.values)
@@ -194,7 +202,7 @@ class ExecuteScenario(QThread):
                     (key, value) in stage.values.items()}
 
                 # call function from instance
-                f = getattr(session, stage.name)
+                f = getattr(self.session, stage.name)
                 f(**current_values)  # noqa https://youtrack.jetbrains.com/issue/PY-27935
 
                 # self.emit(SIGNAL('add_post(QString)'), top_post)
@@ -202,7 +210,7 @@ class ExecuteScenario(QThread):
                 self.sleep(2)
                 pass
 
-        self.sig_done.emit(idx)
+        self.sig_done.emit(self.idx)
 
         # x = stages[len(stages)].value
         # insta.end()
