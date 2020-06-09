@@ -63,7 +63,7 @@ class InstaAction:
         # self.setText(self.name)
 
         self.decsription = re.sub(' +', ' ', (
-            self.call_func.__doc__.strip())) \
+            self.call_func.__doc__.replace('\n', ' ').strip())) \
             if self.call_func.__doc__ \
             else _INSTA_ACTIONS_DESCRIPTIONS.get(func_name, "[ ********* UNKNOWN DESCRIPTION ******** ]")
         # _ = inspect.signature(self.call_func).parameters
@@ -112,7 +112,9 @@ def add_actions2(action_list: list, cls, except_list: list):
 # ACTIONS_LIST.append(InstaAction('InstaPy'))
 
 
-add_actions(ACTIONS_LIST, InstaPy, ['end', 'set_mandatory_language'])
+add_actions(ACTIONS_LIST, InstaPy,
+            ['end', 'set_mandatory_language', 'check_character_set', 'engage_with_posts', 'fetch_smart_comments',
+             'interact_user_following', 'is_mandatory_character', 'set_do_like', 'set_sleep_reduce', 'set_switch_language'])
 # add_actions(ACTIONS_LIST, InstaPy, ['end', ])
 pass
 

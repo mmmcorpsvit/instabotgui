@@ -6,7 +6,7 @@ import logging
 from copy import deepcopy
 
 from PyQt5.QtCore import QUrl, QObject, pyqtSignal, pyqtSlot, QThread
-from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices
+from PyQt5.QtGui import QTextCursor, QIcon, QDesktopServices, QTextOption, QFont
 from PyQt5.QtWidgets import QApplication, QListWidget, QMainWindow, QTextEdit, QWidget, QGridLayout, \
     QLabel, QAction, QDesktopWidget, QFileDialog
 
@@ -85,6 +85,8 @@ class MainWindow(QMainWindow):
     path = ''
     get_thread = None
 
+    current_file_name = None
+
     def __init__(self):
         super().__init__()
 
@@ -112,11 +114,11 @@ class MainWindow(QMainWindow):
 
         self.action_save_file = QAction(QIcon('assets/save.png'), 'Save', self)
         self.action_save_file.setShortcut('Ctrl+S')
-        # action_save_file.triggered.connect(qApp.save)
+        self.action_save_file.triggered.connect(self.action_save_file_trigger)
 
         self.action_save_as_file = QAction(QIcon('assets/save_as.png'), 'Save as', self)
         self.action_save_as_file.setShortcut('Ctrl+Shift+S')
-        # action_save_as_file.triggered.connect(qApp.save_as)
+        self.action_save_as_file.triggered.connect(self.action_save_as_file_trigger)
 
         self.action_help = QAction(QIcon('assets/help.png'), 'Help', self)
         self.action_help.setShortcut('F1')
@@ -162,7 +164,14 @@ class MainWindow(QMainWindow):
 
         # --------------------
         self.actions_list = QListWidget()
-        self.actions_list.setWordWrap(True)
+        # self.actions_list.setWordWrap(False)
+        # self.actions_list.setWrapping(False)
+
+        font = QFont()
+        font.setFamily("Courier New")
+        self.actions_list.setFont(font)
+
+        self.actions_list.addItems(get_actions_list())
         self.actions_list.doubleClicked.connect(self.actions_listDoubleClicked)
 
         self.stages_list = QListWidget()
@@ -203,9 +212,7 @@ class MainWindow(QMainWindow):
         self.setup_logger()
 
         # --------------------
-        self.actions_list.addItems(get_actions_list())
         self.action_new_file_trigger()
-
         self.show()
 
     def setup_logger(self):
@@ -242,6 +249,7 @@ class MainWindow(QMainWindow):
         self.move(qr.topLeft())
 
     def action_new_file_trigger(self):
+        self.current_file_name = None
         self.stages_list.clear()
         self.stages_list.addItem(insta_clone(InstaPyStartStageItem))
         self.stages_list.addItem(insta_clone(InstaPyEndStageItem))
@@ -266,6 +274,12 @@ class MainWindow(QMainWindow):
                 self.path = path
                 self.editor.setPlainText(text)
                 self.update_title()
+
+    def action_save_file_trigger(self):
+        pass
+
+    def action_save_as_file_trigger(self):
+        pass
 
     def actions_listDoubleClicked(self, qmodelindex):  # noqa
         # add new action to stages list
